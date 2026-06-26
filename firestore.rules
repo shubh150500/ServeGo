@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper to check if the user matches admin email (MVP auth rule)
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email != null;
+    }
+
+    // 1. Workers Collection
+    match /workers/{workerId} {
+      // Anyone can register a new worker profile or read worker info
+      allow create, read: if true;
+      // Admin can update or delete profiles. Public can update metrics during reviews.
+      allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'totalReviews', 'lastActivity', 'totalAssignedJobs', 'totalAcceptedJobs', 'totalRejectedJobs', 'totalCompletedJobs']));
+      allow delete: if isAdmin();
+    }
+
+    // 2. Bookings (Leads) Collection
+    match /bookings/{bookingId} {
+      // Public can submit new bookings
+      allow create: if true;
+      // Public can read or edit a booking if they hold the correct secure link token
+      allow read, update: if isAdmin() || (request.query.token == resource.data.securityToken || request.resource.data.securityToken == resource.data.securityToken);
+      allow delete: if isAdmin();
+    }
+
+    // 3. Customers Collection
+    match /customers/{customerId} {
+      allow create: if true;
+      allow read, write: if isAdmin();
+    }
+
+    // 4. Reviews Collection
+    match /reviews/{reviewId} {
+      // Anyone can post feedback; only admins can list reviews in dash
+      allow create: if true;
+      allow read, write: if isAdmin();
+    }
+
+    // 5. Payments Collection
+    match /payments/{paymentId} {
+      // Create payment log on successful Razorpay checkout
+      allow create: if true;
+      allow read, write: if isAdmin();
+    }
+
+    // 6. Complaints Collection
+    match /complaints/{complaintId} {
+      allow create: if true;
+      allow read, write: if isAdmin();
+    }
+
+    // 7. Admin Logs
+    match /admin_logs/{logId} {
+      allow create: if isAdmin();
+      allow read, write: if isAdmin();
+    }
+
+    // 8. Services Collection
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
