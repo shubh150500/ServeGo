@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   title: "ServeGo - Reliable Local Services Marketplace Platform",
   description: "Book certified plumbers, electricians, carpenters, AC repairs, cleaners, and other home services. Verified ratings, assurance guarantees, and zero middleman commissions.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "ServeGo - Reliable Local Services Marketplace Platform",
     description: "Book verified plumbers, electricians, carpenters, and other home services. Quick assignment and direct coordination.",
