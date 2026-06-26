@@ -38,6 +38,9 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preload" href="/logo.png" as="image" type="image/png" />
+      </head>
       <body className="min-h-full flex flex-col">
         <SplashScreen />
         {children}

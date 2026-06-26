@@ -1597,7 +1597,20 @@ export default function AdminDashboardPage() {
                               accept="image/*"
                               onChange={(e) => {
                                 if (e.target.files && e.target.files[0]) {
-                                  setLogoFile(e.target.files[0]);
+                                  const file = e.target.files[0];
+                                  if (file.size > 2 * 1024 * 1024) {
+                                    alert("File is too large. Maximum size allowed is 2MB.");
+                                    e.target.value = "";
+                                    setLogoFile(null);
+                                    return;
+                                  }
+                                  if (!file.type.startsWith("image/")) {
+                                    alert("Invalid file type. Please upload an image file (PNG, JPG, SVG, WEBP).");
+                                    e.target.value = "";
+                                    setLogoFile(null);
+                                    return;
+                                  }
+                                  setLogoFile(file);
                                 }
                               }}
                               className="w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"

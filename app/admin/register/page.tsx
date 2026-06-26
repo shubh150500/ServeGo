@@ -33,6 +33,18 @@ export default function AdminRegisterPage() {
       return;
     }
 
+    const emailLower = email.toLowerCase().trim();
+    const isAllowed = 
+      emailLower === "admin@localservices.com" || 
+      emailLower === "shubhamrajput7667@gmail.com" || 
+      emailLower.endsWith("@localservices.com");
+
+    if (!isAllowed) {
+      setError("This email address is not authorized for administrator registration.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // Create admin account in Firebase Authentication
       await createUserWithEmailAndPassword(auth, email, password);

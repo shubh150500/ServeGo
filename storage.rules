@@ -4,8 +4,8 @@ service firebase.storage {
     
     // 1. Completion photos upload by workers
     match /completions/{bookingId}/{allPaths=**} {
-      // Anyone can upload job completion photos (with size limit < 5MB)
-      allow write: if request.resource.size < 5 * 1024 * 1024;
+      // Anyone can upload job completion photos (with size limit < 5MB and image type)
+      allow write: if request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
       // Anyone can read completion photos
       allow read: if true;
     }
@@ -13,7 +13,7 @@ service firebase.storage {
     // 2. Service logos upload by admins
     match /logos/{serviceId}/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null && request.resource.size < 2 * 1024 * 1024; // limit to 2MB
+      allow write: if request.auth != null && request.resource.size < 2 * 1024 * 1024 && request.resource.contentType.matches('image/.*'); // limit to 2MB and image type
     }
 
     // 3. Default rule

@@ -90,8 +90,22 @@ export default function WorkerCompleteJobPage({ params }: PageProps) {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError("");
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File is too large. Maximum size allowed is 5MB.");
+        return;
+      }
+      
+      // Check file type (must be an image)
+      if (!file.type.startsWith("image/")) {
+        setError("Invalid file type. Please upload an image file (PNG, JPG, WEBP).");
+        return;
+      }
+
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
     }

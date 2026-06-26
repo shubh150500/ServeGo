@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /worker/
 
-Sitemap: https://servicesz.vercel.app/sitemap.xml
+Sitemap: https://servego.vercel.app/sitemap.xml

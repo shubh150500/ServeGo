@@ -9,7 +9,11 @@ service cloud.firestore {
 
     // Helper to check if the user matches admin email (MVP auth rule)
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.email != null;
+      return isAuthenticated() && (
+        request.auth.token.email == 'admin@localservices.com' ||
+        request.auth.token.email == 'shubhamrajput7667@gmail.com' ||
+        request.auth.token.email.matches('.*@localservices\\.com$')
+      );
     }
 
     // 1. Workers Collection

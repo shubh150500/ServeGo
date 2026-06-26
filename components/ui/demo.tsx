@@ -281,7 +281,7 @@ export default function DotGlobeHeroDemo() {
         </div>
 
         {/* Right Column: Sleek iPhone Mockup with Floating 3D Icons */}
-        <div className="lg:col-span-6 flex items-center justify-center relative w-full h-[520px] sm:h-[600px] lg:h-[660px] select-none mt-6 lg:mt-0">
+        <div className="lg:col-span-6 flex items-center justify-center relative w-full h-[520px] sm:h-[600px] lg:h-[660px] select-none mt-6 lg:mt-0" aria-hidden="true">
           
           {/* Ambient Glow behind the mockup */}
           <div className="absolute w-[320px] h-[320px] rounded-full bg-primary/5 blur-3xl pointer-events-none z-0" />

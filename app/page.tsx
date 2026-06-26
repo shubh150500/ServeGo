@@ -132,6 +132,38 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "ServeGo",
+              "url": "https://servego.vercel.app",
+              "logo": "https://servego.vercel.app/logo.png",
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "email": "servegoofficial@gmail.com",
+                "contactType": "customer service"
+              }
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "LocalBusiness",
+              "name": "ServeGo Local Services",
+              "image": "https://servego.vercel.app/logo.png",
+              "url": "https://servego.vercel.app",
+              "email": "servegoofficial@gmail.com",
+              "priceRange": "$$",
+              "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "IN"
+              }
+            }
+          ])
+        }}
+      />
       
       {/* Absolute Header Navigation */}
       <header className="absolute top-0 left-0 right-0 z-30 w-full py-6 px-6">
@@ -177,6 +209,7 @@ export default function Home() {
                   setSearchQuery("");
                 }}
                 className="p-1.5 hover:bg-muted rounded-full transition-colors cursor-pointer"
+                aria-label="Close search modal"
               >
                 <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
               </button>
@@ -192,6 +225,7 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-muted/40 border border-border/85 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all"
+                aria-label="Search services input"
               />
             </div>
             
