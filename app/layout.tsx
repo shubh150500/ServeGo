@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ServeGo - Reliable Local Services Marketplace Platform",
     description: "Book verified plumbers, electricians, carpenters, and other home services. Quick assignment and direct coordination.",
-    url: "https://servego.vercel.app",
+    url: "https://servego.shop",
     siteName: "ServeGo",
     locale: "en_IN",
     type: "website",

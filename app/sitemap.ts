@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { SERVICES_LIST } from "@/lib/services";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://servego.vercel.app";
+  const baseUrl = "https://servego.shop";
 
   const servicesUrls = SERVICES_LIST.map((service) => ({
     url: `${baseUrl}/services/${service.id}`,

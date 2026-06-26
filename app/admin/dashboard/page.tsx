@@ -547,7 +547,7 @@ export default function AdminDashboardPage() {
 
   // Prefilled WhatsApp link generator for Workers
   const generateWorkerWhatsAppLink = (lead: any, worker: any) => {
-    const text = `Hello ${worker.name}! You have been assigned a new ${getServiceName(lead.serviceType)} job in ${lead.customerArea}.\n\nView details & accept/reject here:\nhttps://servego.vercel.app/worker/job/${lead.id}/accept?token=${lead.securityToken}`;
+    const text = `Hello ${worker.name}! You have been assigned a new ${getServiceName(lead.serviceType)} job in ${lead.customerArea}.\n\nView details & accept/reject here:\nhttps://servego.shop/worker/job/${lead.id}/accept?token=${lead.securityToken}`;
     return `https://wa.me/${worker.mobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
   };
 

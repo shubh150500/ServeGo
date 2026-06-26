@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      url: `https://servego.vercel.app/services/${unwrapped.service}`,
+      url: `https://servego.shop/services/${unwrapped.service}`,
       siteName: "ServeGo",
       locale: "en_IN",
       type: "website",
