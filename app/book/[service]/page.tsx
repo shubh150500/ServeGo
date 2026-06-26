@@ -3,7 +3,7 @@
 import React, { useState, use, useEffect } from "react";
 import Link from "next/link";
 import Script from "next/script";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SERVICES_LIST } from "@/lib/services";
 import ServiceIcon from "@/components/ServiceIcon";
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from "firebase/firestore";
@@ -24,18 +24,29 @@ export default function BookServicePage({ params }: PageProps) {
   const [service, setService] = useState<any | null>(null);
   const [loadingService, setLoadingService] = useState(true);
 
+  const searchParams = useSearchParams();
+  const partnerId = searchParams?.get("partnerId") || "";
+  const [partner, setPartner] = useState<any | null>(null);
+  const [toggles, setToggles] = useState<any>({
+    localPartnerServicesEnabled: false,
+    vehicleRentalEnabled: false
+  });
+
   useEffect(() => {
     if (!serviceId) return;
 
-    const unsub = onSnapshot(
+    // Subscribe to service details
+    const unsubService = onSnapshot(
       doc(db, "services", serviceId),
       (docSnap) => {
+        let currentService: any = null;
         if (docSnap.exists()) {
-          setService(docSnap.data());
+          currentService = docSnap.data();
         } else {
           const staticS = SERVICES_LIST.find((s) => s.id === serviceId);
-          if (staticS) setService(staticS);
+          if (staticS) currentService = staticS;
         }
+        setService(currentService);
         setLoadingService(false);
       },
       (err) => {
@@ -44,8 +55,40 @@ export default function BookServicePage({ params }: PageProps) {
       }
     );
 
-    return () => unsub();
+    // Subscribe to toggles
+    const unsubToggles = onSnapshot(
+      doc(db, "system_config", "toggles"),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setToggles(docSnap.data());
+        }
+      },
+      (err) => console.error("Toggles sub failed:", err)
+    );
+
+    return () => {
+      unsubService();
+      unsubToggles();
+    };
   }, [serviceId]);
+
+  // Subscribe to selected partner details
+  useEffect(() => {
+    if (!partnerId || !service || !service.type) return;
+
+    const collectionName = service.type === "partner" ? "shops" : "vehicles";
+    const unsubPartner = onSnapshot(
+      doc(db, collectionName, partnerId),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setPartner({ id: docSnap.id, ...docSnap.data() });
+        }
+      },
+      (err) => console.error("Selected partner sub failed:", err)
+    );
+
+    return () => unsubPartner();
+  }, [partnerId, service]);
 
   // Form State
   const [name, setName] = useState("");
@@ -60,6 +103,33 @@ export default function BookServicePage({ params }: PageProps) {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [newBookingId, setNewBookingId] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Interest registration form state
+  const [interestName, setInterestName] = useState("");
+  const [interestMobile, setInterestMobile] = useState("");
+  const [interestLoading, setInterestLoading] = useState(false);
+  const [interestSuccess, setInterestSuccess] = useState(false);
+
+  const handleInterestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!interestName.trim() || !interestMobile.trim() || !service) return;
+
+    setInterestLoading(true);
+    try {
+      await addDoc(collection(db, "launch_interests"), {
+        name: interestName.trim(),
+        mobile: interestMobile.trim(),
+        serviceId: service.id,
+        serviceName: service.name,
+        createdAt: serverTimestamp()
+      });
+      setInterestSuccess(true);
+    } catch (err) {
+      console.error("Failed to submit launch interest:", err);
+    } finally {
+      setInterestLoading(false);
+    }
+  };
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(newBookingId);
@@ -86,6 +156,113 @@ export default function BookServicePage({ params }: PageProps) {
         <Link href="/" className="px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl">
           Back to Homepage
         </Link>
+      </div>
+    );
+  }
+
+  const isGated = 
+    service && (
+      (service.type === "partner" && !toggles.localPartnerServicesEnabled) ||
+      (service.type === "vehicle" && !toggles.vehicleRentalEnabled)
+    );
+
+  if (isGated) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20">
+        <header className="border-b border-border/60 py-6 px-6">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Back to Home
+            </Link>
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
+              <span className="text-xl font-black tracking-tighter text-black">
+                ServeGo
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 max-w-lg w-full mx-auto px-6 py-12 flex flex-col justify-center space-y-8">
+          <div className="space-y-4 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mx-auto">
+              <ServiceIcon name={service.iconName} className="w-8 h-8" />
+            </div>
+            <h1 className="text-4xl font-black tracking-tight">{service.name}</h1>
+            <span className="inline-block px-3 py-1 bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 text-xs font-bold rounded-full uppercase tracking-wider">
+              Coming Soon
+            </span>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              We are working hard to onboard top-rated local partners and launch {service.name} services in your area. Enter your details below to get notified as soon as we go live!
+            </p>
+          </div>
+
+          {interestSuccess ? (
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 p-6 rounded-2xl text-center space-y-3 animate-in fade-in zoom-in-95">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-xl font-bold">
+                ✓
+              </div>
+              <h4 className="font-bold text-emerald-900 dark:text-emerald-300">Interest Registered!</h4>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                Thank you! We will alert you on WhatsApp/SMS once our services become operational.
+              </p>
+              <Link
+                href="/"
+                className="inline-block mt-4 px-6 py-2.5 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-md transition-all"
+              >
+                Back to Home
+              </Link>
+            </div>
+          ) : (
+            <form onSubmit={handleInterestSubmit} className="bg-card border border-border/80 p-6 rounded-3xl shadow-xl space-y-4">
+              <h3 className="font-bold text-lg text-foreground">Launch Notification Request</h3>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground/80">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={interestName}
+                  onChange={(e) => setInterestName(e.target.value)}
+                  placeholder="e.g. Amit Patel"
+                  className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground/80">WhatsApp Number</label>
+                <input
+                  type="tel"
+                  required
+                  pattern="[0-9]{10}"
+                  title="Please enter a will enter 10-digit mobile number."
+                  value={interestMobile}
+                  onChange={(e) => setInterestMobile(e.target.value)}
+                  placeholder="e.g. 9876543210"
+                  className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={interestLoading || !interestName.trim() || interestMobile.length !== 10}
+                className="w-full py-3 bg-primary text-primary-foreground font-bold text-sm rounded-xl hover:bg-primary/95 shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {interestLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <span>Keep Me Posted</span>
+                )}
+              </button>
+            </form>
+          )}
+        </main>
+
+        <footer className="border-t border-border/60 py-6 px-6 text-center text-xs text-muted-foreground bg-muted/10">
+          © {new Date().getFullYear()} ServeGo. All rights reserved.
+        </footer>
       </div>
     );
   }
@@ -168,7 +345,7 @@ export default function BookServicePage({ params }: PageProps) {
             const secureToken = generateSecurityToken();
 
             // Create Booking document
-            const bookingDoc = {
+            const bookingDoc: any = {
               customerName: name,
               customerMobile: mobile,
               customerAddress: address,
@@ -183,6 +360,12 @@ export default function BookServicePage({ params }: PageProps) {
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             };
+
+            if (partnerId) {
+              bookingDoc.selectedPartnerId = partnerId;
+              bookingDoc.assignedPartnerId = "";
+              bookingDoc.assignedPartnerType = service.type || "";
+            }
 
             const bookingRef = await addDoc(collection(db, "bookings"), bookingDoc);
 
@@ -357,6 +540,29 @@ export default function BookServicePage({ params }: PageProps) {
                 Please provide accurate contact and location details. The assurance fee will lock in your schedule.
               </p>
             </div>
+
+            {partner && (
+              <div className="bg-primary/5 border border-primary/20 p-5 rounded-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    {service.type === "partner" ? "🏪" : "🚗"}
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block">Selected Provider</span>
+                    <h4 className="font-bold text-foreground">
+                      {service.type === "partner" ? partner.name : partner.vehicleName}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">{partner.area}</p>
+                  </div>
+                </div>
+                {service.type === "vehicle" && (
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Rental Price</span>
+                    <strong className="text-foreground text-sm">₹{partner.price}/Day</strong>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="bg-card border border-border/80 p-8 rounded-3xl shadow-lg space-y-6">
               {error && (

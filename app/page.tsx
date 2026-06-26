@@ -27,8 +27,20 @@ import {
 export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<any[]>([]);
+  const [toggles, setToggles] = useState<any>({
+    localPartnerServicesEnabled: false,
+    vehicleRentalEnabled: false
+  });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Coming Soon Modal State
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
+  const [selectedComingSoonService, setSelectedComingSoonService] = useState<any | null>(null);
+  const [interestName, setInterestName] = useState("");
+  const [interestMobile, setInterestMobile] = useState("");
+  const [interestLoading, setInterestLoading] = useState(false);
+  const [interestSuccess, setInterestSuccess] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -42,8 +54,53 @@ export default function Home() {
         console.error("Firestore services subscription failed:", err);
       }
     );
-    return () => unsub();
+
+    const unsubToggles = onSnapshot(
+      doc(db, "system_config", "toggles"),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setToggles(docSnap.data());
+        }
+      },
+      (err) => {
+        console.error("Firestore toggles subscription failed:", err);
+      }
+    );
+
+    return () => {
+      unsub();
+      unsubToggles();
+    };
   }, []);
+
+  const handleComingSoonClick = (service: any) => {
+    setSelectedComingSoonService(service);
+    setIsComingSoonModalOpen(true);
+    setInterestName("");
+    setInterestMobile("");
+    setInterestSuccess(false);
+  };
+
+  const handleInterestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!interestName.trim() || !interestMobile.trim() || !selectedComingSoonService) return;
+
+    setInterestLoading(true);
+    try {
+      await addDoc(collection(db, "launch_interests"), {
+        name: interestName.trim(),
+        mobile: interestMobile.trim(),
+        serviceId: selectedComingSoonService.id,
+        serviceName: selectedComingSoonService.name,
+        createdAt: serverTimestamp()
+      });
+      setInterestSuccess(true);
+    } catch (err) {
+      console.error("Failed to submit launch interest:", err);
+    } finally {
+      setInterestLoading(false);
+    }
+  };
 
   // Become a Worker Form State
   const [workerName, setWorkerName] = useState("");
@@ -393,7 +450,7 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {(services.length > 0 ? services : SERVICES_LIST).map((service, idx) => (
+          {(services.length > 0 ? services : SERVICES_LIST).filter((s) => s.type === "home" || !s.type).map((service, idx) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 20 }}
@@ -437,6 +494,168 @@ export default function Home() {
               </div>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Local Quick Delivery Section */}
+      <section id="local-delivery" className="py-24 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
+        <div className="text-center space-y-4 mb-16">
+          <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5">
+            Local Partners
+          </span>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight">
+            Local Quick Delivery & Shops
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Order medicines, groceries, meals, and building materials from trusted neighborhood stores.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {(services.length > 0 ? services : SERVICES_LIST)
+            .filter((s) => s.type === "partner")
+            .map((service, idx) => {
+              const isLive = toggles.localPartnerServicesEnabled;
+              return (
+                <div
+                  key={service.id}
+                  className="bg-card border border-border/60 hover:border-primary/45 p-6 md:p-8 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:scale-[1.01]"
+                >
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
+                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-bold tracking-tight">{service.name}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">{service.shortDescription}</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-border/60 flex flex-col gap-2">
+                    {isLive ? (
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: <strong className="text-foreground font-bold">₹{service.assuranceFee}</strong></span>
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/services/${service.id}`}
+                            className="px-3 py-1.5 border border-border/80 hover:bg-muted text-xs font-bold rounded-lg transition-all text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Details
+                          </Link>
+                          <Link
+                            href={`/book/${service.id}`}
+                            className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-md hover:bg-primary/95 transition-all cursor-pointer"
+                          >
+                            Book Now
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2.5 py-1 bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 text-[10px] font-bold rounded uppercase tracking-wider">Coming Soon</span>
+                          <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: ₹{service.assuranceFee}</span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => handleComingSoonClick(service)}
+                            className="w-full text-center py-2 bg-[#F97316] text-white text-xs font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer uppercase"
+                          >
+                            Coming Soon
+                          </button>
+                          <button
+                            onClick={() => handleComingSoonClick(service)}
+                            className="w-full py-2 bg-muted hover:bg-primary/10 hover:text-primary text-muted-foreground hover:text-foreground border border-border/50 text-xs font-bold rounded-lg transition-all cursor-pointer text-center"
+                          >
+                            Register for Launch
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </section>
+
+      {/* Vehicle Rental Section */}
+      <section id="vehicle-rental" className="py-24 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
+        <div className="text-center space-y-4 mb-16">
+          <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5">
+            Rentals
+          </span>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight">
+            Vehicle Rental Services
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Hire hatchbacks, sedans, SUVs, and pickup trucks with verified drivers for local or outstation trips.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {(services.length > 0 ? services : SERVICES_LIST)
+            .filter((s) => s.type === "vehicle")
+            .map((service, idx) => {
+              const isLive = toggles.vehicleRentalEnabled;
+              return (
+                <div
+                  key={service.id}
+                  className="bg-card border border-border/60 hover:border-primary/45 p-6 md:p-8 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:scale-[1.01]"
+                >
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
+                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-bold tracking-tight">{service.name}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">{service.shortDescription}</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-border/60 flex flex-col gap-2">
+                    {isLive ? (
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: <strong className="text-foreground font-bold">₹{service.assuranceFee}</strong></span>
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/services/${service.id}`}
+                            className="px-3 py-1.5 border border-border/80 hover:bg-muted text-xs font-bold rounded-lg transition-all text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Details
+                          </Link>
+                          <Link
+                            href={`/book/${service.id}`}
+                            className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-md hover:bg-primary/95 transition-all cursor-pointer"
+                          >
+                            Book Now
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2.5 py-1 bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 text-[10px] font-bold rounded uppercase tracking-wider">Coming Soon</span>
+                          <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: ₹{service.assuranceFee}</span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => handleComingSoonClick(service)}
+                            className="w-full text-center py-2 bg-[#F97316] text-white text-xs font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer uppercase"
+                          >
+                            Coming Soon
+                          </button>
+                          <button
+                            onClick={() => handleComingSoonClick(service)}
+                            className="w-full py-2 bg-muted hover:bg-primary/10 hover:text-primary text-muted-foreground hover:text-foreground border border-border/50 text-xs font-bold rounded-lg transition-all cursor-pointer text-center"
+                          >
+                            Register for Launch
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </section>
 
@@ -750,6 +969,108 @@ export default function Home() {
         </div>
       </footer>
 
+      {/* Coming Soon / Launch Registration Modal */}
+      {isComingSoonModalOpen && selectedComingSoonService && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-md">
+          <div 
+            className="fixed inset-0 bg-transparent" 
+            onClick={() => setIsComingSoonModalOpen(false)}
+          />
+          <div className="relative bg-card border border-border/80 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Close button */}
+            <button
+              onClick={() => setIsComingSoonModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 hover:bg-muted rounded-full transition-colors cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+            </button>
+
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="space-y-2 text-center">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto">
+                  <ServiceIcon name={selectedComingSoonService.iconName} className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-black tracking-tight">{selectedComingSoonService.name}</h3>
+                <span className="inline-block px-3 py-1 bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 text-xs font-bold rounded-full uppercase tracking-wider">
+                  Coming Soon
+                </span>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  We are launching {selectedComingSoonService.name} services in your area very soon! Register your interest to get notified and receive an early-bird launch discount.
+                </p>
+              </div>
+
+              {/* Success State */}
+              {interestSuccess ? (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 p-6 rounded-2xl text-center space-y-3"
+                >
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-xl font-bold">
+                    ✓
+                  </div>
+                  <h4 className="font-bold text-emerald-900 dark:text-emerald-300">Registration Complete!</h4>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                    Thank you, {interestName}! We have saved your interest. You will be the first to know when we launch in your area.
+                  </p>
+                  <button
+                    onClick={() => setIsComingSoonModalOpen(false)}
+                    className="mt-4 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </motion.div>
+              ) : (
+                /* Registration Form */
+                <form onSubmit={handleInterestSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground/80">Your Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={interestName}
+                      onChange={(e) => setInterestName(e.target.value)}
+                      placeholder="e.g. Rahul Sharma"
+                      className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground/80">WhatsApp Number</label>
+                    <input
+                      type="tel"
+                      required
+                      pattern="[0-9]{10}"
+                      title="Please enter a valid 10-digit mobile number."
+                      value={interestMobile}
+                      onChange={(e) => setInterestMobile(e.target.value)}
+                      placeholder="e.g. 9876543210"
+                      className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={interestLoading || !interestName.trim() || interestMobile.length !== 10}
+                    className="w-full py-3 bg-primary text-primary-foreground font-bold text-sm rounded-xl hover:bg-primary/95 shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  >
+                    {interestLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        <span>Registering...</span>
+                      </>
+                    ) : (
+                      <span>Register for Launch</span>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

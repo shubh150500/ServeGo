@@ -70,5 +70,23 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // 9. Shops Collection
+    match /shops/{shopId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 10. Vehicles Collection
+    match /vehicles/{vehicleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 11. System Config Collection
+    match /system_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

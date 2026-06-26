@@ -32,16 +32,16 @@ export default function OrderTrackingPage({ params }: PageProps) {
   // State
   const [booking, setBooking] = useState<any | null>(null);
   const [worker, setWorker] = useState<any | null>(null);
+  const [partner, setPartner] = useState<any | null>(null);
   const [serviceDetails, setServiceDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Hook 1: Subscribe to Booking Document
   useEffect(() => {
     if (!bookingId) return;
 
     setError("");
-    
-    // Subscribe to real-time updates on the booking document
     const bookingRef = doc(db, "bookings", bookingId);
     const unsubscribeBooking = onSnapshot(
       bookingRef,
@@ -55,23 +55,6 @@ export default function OrderTrackingPage({ params }: PageProps) {
         const bData = docSnap.data();
         setBooking({ id: docSnap.id, ...bData });
         setLoading(false);
-
-        // If a worker is assigned, subscribe to real-time updates on the worker document
-        if (bData.assignedWorkerId) {
-          const workerRef = doc(db, "workers", bData.assignedWorkerId);
-          const unsubscribeWorker = onSnapshot(
-            workerRef,
-            (wSnap) => {
-              if (wSnap.exists()) {
-                setWorker({ id: wSnap.id, ...wSnap.data() });
-              }
-            },
-            (err) => console.error("Firestore tracking worker subscription failed:", err)
-          );
-          return () => unsubscribeWorker();
-        } else {
-          setWorker(null);
-        }
       },
       (err) => {
         console.error("Real-time listener failed:", err);
@@ -82,6 +65,49 @@ export default function OrderTrackingPage({ params }: PageProps) {
 
     return () => unsubscribeBooking();
   }, [bookingId]);
+
+  // Hook 2: Subscribe to Assigned Worker
+  useEffect(() => {
+    if (!booking?.assignedWorkerId) {
+      setWorker(null);
+      return;
+    }
+
+    const workerRef = doc(db, "workers", booking.assignedWorkerId);
+    const unsubscribeWorker = onSnapshot(
+      workerRef,
+      (wSnap) => {
+        if (wSnap.exists()) {
+          setWorker({ id: wSnap.id, ...wSnap.data() });
+        }
+      },
+      (err) => console.error("Firestore tracking worker subscription failed:", err)
+    );
+
+    return () => unsubscribeWorker();
+  }, [booking?.assignedWorkerId]);
+
+  // Hook 3: Subscribe to Assigned Partner Shop or Vehicle
+  useEffect(() => {
+    if (!booking?.assignedPartnerId || !booking?.assignedPartnerType) {
+      setPartner(null);
+      return;
+    }
+
+    const coll = booking.assignedPartnerType === "shop" ? "shops" : "vehicles";
+    const partnerRef = doc(db, coll, booking.assignedPartnerId);
+    const unsubscribePartner = onSnapshot(
+      partnerRef,
+      (pSnap) => {
+        if (pSnap.exists()) {
+          setPartner({ id: pSnap.id, type: booking.assignedPartnerType, ...pSnap.data() });
+        }
+      },
+      (err) => console.error("Firestore tracking partner subscription failed:", err)
+    );
+
+    return () => unsubscribePartner();
+  }, [booking?.assignedPartnerId, booking?.assignedPartnerType]);
 
   useEffect(() => {
     if (!booking?.serviceType) return;
@@ -315,6 +341,135 @@ export default function OrderTrackingPage({ params }: PageProps) {
                     >
                       <Phone className="w-4 h-4" /> Call Partner
                     </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Revealed Partner Shop/Vehicle details card if status is ASSIGNED, ACCEPTED or COMPLETED */}
+            {partner && (booking.status === "ASSIGNED" || booking.status === "ACCEPTED" || booking.status === "COMPLETED") && (
+              <div className="border-t border-border/60 pt-6 space-y-4">
+                <h3 className="text-base font-bold flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary" /> Assigned Service Partner
+                </h3>
+                
+                <div className="bg-muted/30 border border-border/60 p-6 rounded-2xl space-y-4">
+                  {partner.type === "shop" ? (
+                    <>
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-4">
+                        <div>
+                          <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded uppercase">
+                            Shop Partner
+                          </span>
+                          <h4 className="text-lg font-black mt-1">{partner.name}</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">Owner: <strong>{partner.ownerName}</strong></p>
+                        </div>
+                        <div className="flex items-center gap-1 font-bold text-amber-500 text-sm">
+                          <Star className="w-4 h-4 fill-amber-400 text-amber-400" /> {partner.rating || "5.0"}★
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-muted-foreground">
+                        <div>
+                          <strong>Area Cover:</strong> {partner.area}
+                        </div>
+                        <div>
+                          <strong>Address:</strong> {partner.address}
+                        </div>
+                        <div>
+                          <strong>Hours:</strong> {partner.openingTime} - {partner.closingTime}
+                        </div>
+                        <div>
+                          <strong>Delivery Support:</strong> {partner.deliveryAvailable ? `Yes (Charges: ₹${partner.deliveryCharges})` : "Pickup Only"}
+                        </div>
+                      </div>
+
+                      {partner.description && (
+                        <p className="text-xs text-muted-foreground bg-muted/40 p-3 rounded-xl border border-border/40 italic">
+                          "{partner.description}"
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap gap-3 pt-2">
+                        <a
+                          href={`tel:${partner.phone}`}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                        >
+                          <Phone className="w-3.5 h-3.5" /> Call Shop
+                        </a>
+                        {partner.whatsapp && (
+                          <a
+                            href={`https://wa.me/${partner.whatsapp.replace(/\s+/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold rounded-xl text-xs transition-colors"
+                          >
+                            WhatsApp
+                          </a>
+                        )}
+                        {partner.googleMapsLink && (
+                          <a
+                            href={partner.googleMapsLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-border/80 text-muted-foreground hover:bg-muted font-bold rounded-xl text-xs transition-colors"
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-primary" /> Directions
+                          </a>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-4">
+                        <div>
+                          <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded uppercase">
+                            Rental Vehicle
+                          </span>
+                          <h4 className="text-lg font-black mt-1">{partner.vehicleName}</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">Plate Number: <strong>{partner.vehicleNumber}</strong></p>
+                        </div>
+                        <span className="text-xs bg-muted border border-border/80 px-2.5 py-1 rounded-xl text-foreground font-black capitalize">
+                          {partner.category?.replace("vehicle-", "")}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-muted-foreground">
+                        <div>
+                          <strong>Owner:</strong> {partner.ownerName}
+                        </div>
+                        {partner.driverName && (
+                          <div>
+                            <strong>Driver:</strong> {partner.driverName}
+                          </div>
+                        )}
+                        <div>
+                          <strong>Area Cover:</strong> {partner.area}
+                        </div>
+                        <div>
+                          <strong>Daily Rent:</strong> ₹{partner.price}/day
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 pt-2">
+                        <a
+                          href={`tel:${partner.phone}`}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                        >
+                          <Phone className="w-3.5 h-3.5" /> Call Driver
+                        </a>
+                        {partner.whatsapp && (
+                          <a
+                            href={`https://wa.me/${partner.whatsapp.replace(/\s+/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold rounded-xl text-xs transition-colors"
+                          >
+                            WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

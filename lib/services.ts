@@ -8,6 +8,7 @@ export interface ServiceDetails {
   benefits: string[];
   subServices: string[];
   faq: { question: string; answer: string }[];
+  type?: "home" | "partner" | "vehicle";
 }
 
 export const SERVICES_LIST: ServiceDetails[] = [
@@ -352,5 +353,302 @@ export const SERVICES_LIST: ServiceDetails[] = [
         answer: "Yes, we provide high-quality multi-ply carton boxes, bubble wraps, tapes, and stretch films as part of the package."
       }
     ]
+  },
+  {
+    id: "medical-shops",
+    name: "Medical Shops",
+    shortDescription: "Verified pharmacies and medical shops with home delivery.",
+    description: "Find pharmacies and medicine shops near you. Get medicines, healthcare products, and wellness essentials delivered straight to your door.",
+    assuranceFee: 49,
+    iconName: "Pill",
+    benefits: [
+      "100% genuine medicines guaranteed",
+      "Fast home delivery options",
+      "Accurate prescription reading",
+      "Verified local stores"
+    ],
+    subServices: [
+      "Prescription Medicines",
+      "OTC Drugs & Health Products",
+      "Baby Care & Wellness",
+      "Surgicals & First Aid"
+    ],
+    faq: [
+      {
+        question: "Can I order prescription medicines?",
+        answer: "Yes, you will need to upload or present a valid doctor's prescription when placing orders or when the delivery partner arrives."
+      }
+    ],
+    type: "partner"
+  },
+  {
+    id: "grocery-kirana-shops",
+    name: "Rasan (Grocery)",
+    shortDescription: "Local kirana and grocery stores for daily essentials.",
+    description: "Get grocery, fresh items, household supplies, and daily essentials from trusted local kirana and supermarket partners.",
+    assuranceFee: 49,
+    iconName: "ShoppingBag",
+    benefits: [
+      "Fresh quality items assured",
+      "Local store prices and discounts",
+      "Quick same-day home delivery",
+      "Flexible ordering on WhatsApp"
+    ],
+    subServices: [
+      "Daily Essentials & Rasan",
+      "Fresh Fruits & Vegetables",
+      "Beverages & Snacks",
+      "Household & Cleaning Products"
+    ],
+    faq: [
+      {
+        question: "Is there a minimum order value?",
+        answer: "Minimum order values are set by individual shops, but generally, local stores deliver orders above ₹200."
+      }
+    ],
+    type: "partner"
+  },
+  {
+    id: "restaurants",
+    name: "Local Restaurants",
+    shortDescription: "Top-rated local dining and quick delivery food partners.",
+    description: "Order delicious meals, breakfast, and fast food from the best restaurants and eateries in your local area.",
+    assuranceFee: 49,
+    iconName: "Utensils",
+    benefits: [
+      "Freshly prepared delicious food",
+      "Hygienically packaged meals",
+      "Super fast delivery",
+      "Wide range of local cuisines"
+    ],
+    subServices: [
+      "Lunch & Dinner Meals",
+      "Breakfast & Evening Snacks",
+      "Fast Food & Desserts",
+      "Local Specialties"
+    ],
+    faq: [
+      {
+        question: "How long does food delivery take?",
+        answer: "Food delivery typically takes 30-45 minutes depending on your distance from the restaurant."
+      }
+    ],
+    type: "partner"
+  },
+  {
+    id: "building-material-shops",
+    name: "Building Material Shops",
+    shortDescription: "Cement, sand, bricks, steel, and structural supplies.",
+    description: "Source high-quality construction materials, including cement, bricks, sand, aggregate, and steel, from verified local building material suppliers.",
+    assuranceFee: 199,
+    iconName: "Construction",
+    benefits: [
+      "Genuine grade materials",
+      "Competitive market rates",
+      "Bulk delivery to construction sites",
+      "Accurate weight and volume verification"
+    ],
+    subServices: [
+      "High-grade Cement & Sand",
+      "Red Bricks & Hollow Blocks",
+      "Structural TMT Steel Bars",
+      "Aggregate & Stone Dust"
+    ],
+    faq: [
+      {
+        question: "Are delivery charges included in material cost?",
+        answer: "Usually, unloading and delivery charges depend on the site distance and order quantity and will be confirmed by the supplier."
+      }
+    ],
+    type: "partner"
+  },
+  {
+    id: "centring-material-suppliers",
+    name: "Centering Services",
+    shortDescription: "Iron plates, wooden planks, and props for construction.",
+    description: "Rent centering materials, concrete shuttering plates, wooden planks, adjustable steel props, and scaffolding equipment from certified suppliers.",
+    assuranceFee: 299,
+    iconName: "Layers",
+    benefits: [
+      "Heavy-duty shuttering plates",
+      "Sturdy steel props & spans",
+      "Flexible rental durations",
+      "On-time site delivery & pickup"
+    ],
+    subServices: [
+      "Concrete Shuttering Plates",
+      "Adjustable Steel Props (Jack)",
+      "Wooden Planks & H-Beams",
+      "Scaffolding & Cup-lock Systems"
+    ],
+    faq: [
+      {
+        question: "What is the minimum rental duration?",
+        answer: "Shuttering and scaffolding equipment are typically rented on a monthly or daily basis. You can discuss flexible durations with the assigned partner."
+      }
+    ],
+    type: "partner"
+  },
+  {
+    id: "hardware-shops",
+    name: "Hardware Shops",
+    shortDescription: "Paints, pipes, screws, electrical fittings, and tools.",
+    description: "Shop for premium hardware tools, plumbing fixtures, electrical switches, paints, bolts, and repair accessories from local partners.",
+    assuranceFee: 99,
+    iconName: "Wrench",
+    benefits: [
+      "Wide inventory of major brands",
+      "Genuine tools & accessories",
+      "Expert counter guidance",
+      "Fast pickup or delivery options"
+    ],
+    subServices: [
+      "Plumbing Pipes & Fittings",
+      "Electrical Switches & Cables",
+      "Paints & Painting Tools",
+      "Hand Tools & Fasteners"
+    ],
+    faq: [
+      {
+        question: "Do you deliver small items like nails or switches?",
+        answer: "Yes, many of our local hardware partners offer home delivery for a small delivery fee or free above a certain order value."
+      }
+    ],
+    type: "partner"
+  },
+  {
+    id: "vehicle-sedan",
+    name: "Sedan Rental",
+    shortDescription: "Comfortable 5-seater sedans for city and outstation travel.",
+    description: "Rent premium, well-maintained sedans for business trips, family travel, outstation journeys, or daily commutes with professional drivers.",
+    assuranceFee: 199,
+    iconName: "Car",
+    benefits: [
+      "Clean and sanitized cabins",
+      "Professional, verified drivers",
+      "Transparent pricing (per km/hour)",
+      "24/7 road assistance support"
+    ],
+    subServices: [
+      "Local City Travel (8hr/80km)",
+      "Outstation Round Trips",
+      "Airport Pickup & Dropoff",
+      "Hourly Rental Packages"
+    ],
+    faq: [
+      {
+        question: "Are fuel charges included in the price?",
+        answer: "Fuel policy varies by rental package. It can be per-km inclusive of fuel, or guest-fueled. Details will be provided during coordination."
+      }
+    ],
+    type: "vehicle"
+  },
+  {
+    id: "vehicle-suv",
+    name: "SUV Rental",
+    shortDescription: "Spacious 7-seater SUVs for family trips and rough roads.",
+    description: "Rent powerful 7-seater SUVs (like Creta, Innova, Scorpio) for comfortable long-distance travel, family tours, and rough terrains.",
+    assuranceFee: 299,
+    iconName: "Car",
+    benefits: [
+      "Generous legroom & luggage space",
+      "Top-tier vehicle condition",
+      "Experienced highway drivers",
+      "AC/Non-AC customizable options"
+    ],
+    subServices: [
+      "Family Outstation Trips",
+      "Rough Terrain Travel",
+      "Wedding/Event VIP transport",
+      "Full-Day Local Charter"
+    ],
+    faq: [
+      {
+        question: "Can we hire the vehicle without a driver?",
+        answer: "We currently only offer chauffeur-driven rentals to ensure safety, reliability, and hassle-free transit."
+      }
+    ],
+    type: "vehicle"
+  },
+  {
+    id: "vehicle-hatchback",
+    name: "Hatchback Rental",
+    shortDescription: "Compact, fuel-efficient hatchbacks for quick city rides.",
+    description: "Rent compact hatchbacks (like Swift, i10, Alto) for navigating city traffic easily at pocket-friendly rates.",
+    assuranceFee: 149,
+    iconName: "Car",
+    benefits: [
+      "Easy city parking & navigation",
+      "Highly economical rates",
+      "Perfect for daily running",
+      "Prompt matching & dispatch"
+    ],
+    subServices: [
+      "Intra-City Quick Rides",
+      "Daily Personal Commute",
+      "Short-Distance Local Running",
+      "Budget Outstation Trips"
+    ],
+    faq: [
+      {
+        question: "How quickly can a hatchback be dispatched?",
+        answer: "Usually within 60-90 minutes of the booking confirmation, depending on driver availability in your area."
+      }
+    ],
+    type: "vehicle"
+  },
+  {
+    id: "vehicle-pickup",
+    name: "Pickup Rental",
+    shortDescription: "Open-bed pickup trucks for medium goods and shifting.",
+    description: "Rent open-bed loading pickups (like Bolero Pickup, Tata Yodha) for transporting construction materials, commercial goods, or shifting household items.",
+    assuranceFee: 249,
+    iconName: "Truck",
+    benefits: [
+      "Heavy-duty payload capacity",
+      "Secure tie-down points",
+      "Experienced cargo drivers",
+      "Fast loading assistance"
+    ],
+    subServices: [
+      "Building Material Transport",
+      "Household Goods Shifting",
+      "Commercial Load Delivery",
+      "Local Factory/Warehouse Trips"
+    ],
+    faq: [
+      {
+        question: "Is loading/unloading labor included?",
+        answer: "Driver helper can assist in placement, but heavy loading/unloading labor must be hired separately (available in our Helper category!)."
+      }
+    ],
+    type: "vehicle"
+  },
+  {
+    id: "vehicle-mini-truck",
+    name: "Mini Truck Rental",
+    shortDescription: "Compact mini trucks for commercial cargo and heavy transport.",
+    description: "Rent mini trucks (like Tata Ace, Mahindra Jeeto) for intra-city goods transportation, retail deliveries, and small business logistics.",
+    assuranceFee: 249,
+    iconName: "Truck",
+    benefits: [
+      "Ideal for narrow city streets",
+      "Cost-effective cargo transit",
+      "Reliable cargo tracking",
+      "Flexible booking per trip/day"
+    ],
+    subServices: [
+      "Intra-City Cargo Delivery",
+      "Shop Stock Replenishment",
+      "Small Household Shifting",
+      "E-commerce Delivery Support"
+    ],
+    faq: [
+      {
+        question: "Are toll taxes included in the booking fee?",
+        answer: "State/highway tolls are to be paid by the customer during the trip or added to the final invoice."
+      }
+    ],
+    type: "vehicle"
   }
 ];
