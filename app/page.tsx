@@ -496,80 +496,52 @@ export default function Home() {
           ))}
         </div>
       </section>
-
       {/* Local Quick Delivery Section */}
-      <section id="local-delivery" className="py-24 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
-        <div className="text-center space-y-4 mb-16">
-          <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5">
-            Local Partners
-          </span>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-            Local Quick Delivery & Shops
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Order medicines, groceries, meals, and building materials from trusted neighborhood stores.
-          </p>
+      <section id="local-delivery" className="py-16 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
+        <div className="flex items-center gap-3 mb-8">
+          <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase">Local Quick Delivery</h2>
+          <span className="px-2.5 py-0.5 bg-primary/15 text-primary text-[10px] font-black rounded-full uppercase tracking-wider">New</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
           {(services.length > 0 ? services : SERVICES_LIST)
             .filter((s) => s.type === "partner")
-            .map((service, idx) => {
+            .map((service) => {
               const isLive = toggles.localPartnerServicesEnabled;
               return (
                 <div
                   key={service.id}
-                  className="bg-card border border-border/60 hover:border-primary/45 p-6 md:p-8 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:scale-[1.01]"
+                  className="bg-card border border-border/60 hover:border-primary/40 p-5 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:shadow-md"
                 >
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
-                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                  <div className="space-y-3">
+                    <div className="w-11 h-11 rounded-xl bg-primary/8 border border-border/40 flex items-center justify-center text-primary/70 overflow-hidden">
+                      <ServiceIcon name={service.iconName} className="w-5 h-5" />
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-bold tracking-tight">{service.name}</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">{service.shortDescription}</p>
+                    <div>
+                      <h3 className="text-sm md:text-base font-bold tracking-tight leading-snug">{service.name}</h3>
+                      <p className="text-muted-foreground text-[11px] leading-relaxed mt-1 line-clamp-2 hidden sm:block">{service.shortDescription}</p>
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-border/60 flex flex-col gap-2">
+                  <div className="mt-4 flex flex-col gap-2">
                     {isLive ? (
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: <strong className="text-foreground font-bold">₹{service.assuranceFee}</strong></span>
-                        <div className="flex gap-2">
-                          <Link
-                            href={`/services/${service.id}`}
-                            className="px-3 py-1.5 border border-border/80 hover:bg-muted text-xs font-bold rounded-lg transition-all text-muted-foreground hover:text-foreground cursor-pointer"
-                          >
-                            Details
-                          </Link>
-                          <Link
-                            href={`/book/${service.id}`}
-                            className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-md hover:bg-primary/95 transition-all cursor-pointer"
-                          >
-                            Book Now
-                          </Link>
-                        </div>
-                      </div>
+                      <Link
+                        href={`/services/${service.id}`}
+                        className="w-full text-center py-2 bg-primary text-primary-foreground text-[11px] font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                      >
+                        View Shops
+                      </Link>
                     ) : (
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                          <span className="px-2.5 py-1 bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 text-[10px] font-bold rounded uppercase tracking-wider">Coming Soon</span>
-                          <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: ₹{service.assuranceFee}</span>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() => handleComingSoonClick(service)}
-                            className="w-full text-center py-2 bg-[#F97316] text-white text-xs font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer uppercase"
-                          >
-                            Coming Soon
-                          </button>
-                          <button
-                            onClick={() => handleComingSoonClick(service)}
-                            className="w-full py-2 bg-muted hover:bg-primary/10 hover:text-primary text-muted-foreground hover:text-foreground border border-border/50 text-xs font-bold rounded-lg transition-all cursor-pointer text-center"
-                          >
-                            Register for Launch
-                          </button>
-                        </div>
-                      </div>
+                      <>
+                        <span className="inline-block w-fit px-3 py-1 bg-[#F97316] text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
+                          Coming Soon
+                        </span>
+                        <button
+                          onClick={() => handleComingSoonClick(service)}
+                          className="w-full py-2 bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground border border-border/50 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center"
+                        >
+                          Register for Launch
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -579,78 +551,51 @@ export default function Home() {
       </section>
 
       {/* Vehicle Rental Section */}
-      <section id="vehicle-rental" className="py-24 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
-        <div className="text-center space-y-4 mb-16">
-          <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5">
-            Rentals
-          </span>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-            Vehicle Rental Services
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Hire hatchbacks, sedans, SUVs, and pickup trucks with verified drivers for local or outstation trips.
-          </p>
+      <section id="vehicle-rental" className="py-16 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
+        <div className="flex items-center gap-3 mb-8">
+          <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase">Vehicle Rentals</h2>
+          <span className="px-2.5 py-0.5 bg-primary/15 text-primary text-[10px] font-black rounded-full uppercase tracking-wider">New</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {(services.length > 0 ? services : SERVICES_LIST)
             .filter((s) => s.type === "vehicle")
-            .map((service, idx) => {
+            .map((service) => {
               const isLive = toggles.vehicleRentalEnabled;
               return (
                 <div
                   key={service.id}
-                  className="bg-card border border-border/60 hover:border-primary/45 p-6 md:p-8 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:scale-[1.01]"
+                  className="bg-card border border-border/60 hover:border-primary/40 p-5 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:shadow-md"
                 >
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
-                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                  <div className="space-y-3">
+                    <div className="w-11 h-11 rounded-xl bg-primary/8 border border-border/40 flex items-center justify-center text-primary/70 overflow-hidden">
+                      <ServiceIcon name={service.iconName} className="w-5 h-5" />
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-bold tracking-tight">{service.name}</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">{service.shortDescription}</p>
+                    <div>
+                      <h3 className="text-sm md:text-base font-bold tracking-tight leading-snug">{service.name}</h3>
+                      <p className="text-muted-foreground text-[11px] leading-relaxed mt-1 line-clamp-2 hidden sm:block">{service.shortDescription}</p>
                     </div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-border/60 flex flex-col gap-2">
+                  <div className="mt-4 flex flex-col gap-2">
                     {isLive ? (
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: <strong className="text-foreground font-bold">₹{service.assuranceFee}</strong></span>
-                        <div className="flex gap-2">
-                          <Link
-                            href={`/services/${service.id}`}
-                            className="px-3 py-1.5 border border-border/80 hover:bg-muted text-xs font-bold rounded-lg transition-all text-muted-foreground hover:text-foreground cursor-pointer"
-                          >
-                            Details
-                          </Link>
-                          <Link
-                            href={`/book/${service.id}`}
-                            className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-md hover:bg-primary/95 transition-all cursor-pointer"
-                          >
-                            Book Now
-                          </Link>
-                        </div>
-                      </div>
+                      <Link
+                        href={`/services/${service.id}`}
+                        className="w-full text-center py-2 bg-primary text-primary-foreground text-[11px] font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                      >
+                        View Vehicles
+                      </Link>
                     ) : (
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                          <span className="px-2.5 py-1 bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 text-[10px] font-bold rounded uppercase tracking-wider">Coming Soon</span>
-                          <span className="text-xs font-semibold text-muted-foreground">Assurance Fee: ₹{service.assuranceFee}</span>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() => handleComingSoonClick(service)}
-                            className="w-full text-center py-2 bg-[#F97316] text-white text-xs font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer uppercase"
-                          >
-                            Coming Soon
-                          </button>
-                          <button
-                            onClick={() => handleComingSoonClick(service)}
-                            className="w-full py-2 bg-muted hover:bg-primary/10 hover:text-primary text-muted-foreground hover:text-foreground border border-border/50 text-xs font-bold rounded-lg transition-all cursor-pointer text-center"
-                          >
-                            Register for Launch
-                          </button>
-                        </div>
-                      </div>
+                      <>
+                        <span className="inline-block w-fit px-3 py-1 bg-[#F97316] text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
+                          Coming Soon
+                        </span>
+                        <button
+                          onClick={() => handleComingSoonClick(service)}
+                          className="w-full py-2 bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground border border-border/50 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center"
+                        >
+                          Register for Launch
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
