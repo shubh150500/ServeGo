@@ -487,9 +487,9 @@ export default function Home() {
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="benefit-card bg-card border border-border/60 p-8 rounded-2xl space-y-4">
               <ShieldCheck className="w-12 h-12 text-primary" />
-              <h3 className="text-xl font-bold">100% Insured Assurance</h3>
+              <h3 className="text-xl font-bold">Service Quality Assurance</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                If our provider causes any accidental damage, the assurance fee covers basic remediation costs.
+                We hold our providers to the highest standards. We actively monitor feedback and service quality to ensure a reliable and safe experience.
               </p>
             </div>
             <div className="benefit-card bg-card border border-border/60 p-8 rounded-2xl space-y-4">
