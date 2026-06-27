@@ -443,11 +443,12 @@ export default function AdminDashboardPage() {
       setShopImageFiles([]);
       setShopExistingImages([]);
       setShopStatus("active");
+      setLoadingData(false);
+      alert(editingShop ? "Shop profile updated successfully!" : "New partner shop registered successfully!");
     } catch (err: any) {
       console.error(err);
-      alert("Failed to save shop: " + err.message);
-    } finally {
       setLoadingData(false);
+      alert("Failed to save shop: " + err.message);
     }
   };
 
@@ -533,11 +534,12 @@ export default function AdminDashboardPage() {
       setVehicleImageFiles([]);
       setVehicleExistingImages([]);
       setVehicleStatus("active");
+      setLoadingData(false);
+      alert(editingVehicle ? "Vehicle profile updated successfully!" : "New vehicle registered successfully!");
     } catch (err: any) {
       console.error(err);
-      alert("Failed to save vehicle: " + err.message);
-    } finally {
       setLoadingData(false);
+      alert("Failed to save vehicle: " + err.message);
     }
   };
 
@@ -2695,11 +2697,11 @@ export default function AdminDashboardPage() {
                           <div className="space-y-2">
                             <label className="text-sm font-bold text-foreground/80">Delivery Charges (₹)</label>
                             <input
-                              type="number"
+                              type="text"
                               disabled={!shopDeliveryAvailable}
                               placeholder="e.g. 30"
                               value={shopDeliveryCharges}
-                              onChange={(e) => setShopDeliveryCharges(e.target.value)}
+                              onChange={(e) => setShopDeliveryCharges(e.target.value.replace(/[^0-9.]/g, ''))}
                               className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm disabled:opacity-50"
                             />
                           </div>
@@ -3102,11 +3104,11 @@ export default function AdminDashboardPage() {
                           <div className="space-y-2">
                             <label className="text-sm font-bold text-foreground/80">Daily Rent Price (₹) *</label>
                             <input
-                              type="number"
+                              type="text"
                               required
                               placeholder="e.g. 1500"
                               value={vehiclePrice}
-                              onChange={(e) => setVehiclePrice(e.target.value)}
+                              onChange={(e) => setVehiclePrice(e.target.value.replace(/[^0-9.]/g, ''))}
                               className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
                             />
                           </div>
