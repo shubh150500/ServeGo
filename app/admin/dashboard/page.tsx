@@ -128,6 +128,15 @@ export default function AdminDashboardPage() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [interests, setInterests] = useState<any[]>([]);
   const [waitlist, setWaitlist] = useState<any[]>([]);
+  const [wlSearch, setWlSearch] = useState("");
+  const [wlCityFilter, setWlCityFilter] = useState("");
+  const [wlServiceFilter, setWlServiceFilter] = useState("");
+  const [wlStatusFilter, setWlStatusFilter] = useState("");
+  const [wlCurrentPage, setWlCurrentPage] = useState(1);
+  const [editingWlNotes, setEditingWlNotes] = useState<string | null>(null);
+  const [wlNotesInput, setWlNotesInput] = useState("");
+  const wlItemsPerPage = 15;
+
   const [toggles, setToggles] = useState<any>({
     localPartnerServicesEnabled: false,
     vehicleRentalEnabled: false,
@@ -3504,130 +3513,221 @@ export default function AdminDashboardPage() {
                 </div>
               )}
               {/* Pre-Launch Waitlist Manager Panel */}
-              {activeTab === "waitlist" && (
-                <div className="space-y-8">
-                  {/* Waitlist Header Row */}
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                      <h2 className="text-xl font-black text-foreground">Pre-Launch Waitlist Database</h2>
-                      <p className="text-xs text-muted-foreground mt-1">Review registrations, manage follow-up contact status, and analyze pre-launch leads.</p>
-                    </div>
+              {activeTab === "waitlist" && (() => {
+                // Filter and paginate waitlist
+                const filteredWaitlist = waitlist
+                  .filter((w) => {
+                    const searchLower = wlSearch.toLowerCase();
+                    const matchSearch =
+                      !wlSearch ||
+                      (w.name || "").toLowerCase().includes(searchLower) ||
+                      (w.mobile || "").toLowerCase().includes(searchLower);
                     
-                    <button
-                      onClick={() => {
-                        const headers = ["Position", "Full Name", "Mobile Number", "City", "Area", "Service ID", "Status", "IP Address", "Registration Date"];
-                        const rows = waitlist.map(w => [
-                          w.waitlistPosition || "",
-                          w.name || "",
-                          w.mobile || "",
-                          w.city || "",
-                          w.area || "",
-                          w.interestedService || "",
-                          w.status || "pending",
-                          w.ip || "unknown",
-                          w.createdAt?.seconds ? new Date(w.createdAt.seconds * 1000).toLocaleString() : ""
-                        ]);
-                        const csvContent = "data:text/csv;charset=utf-8," 
-                          + [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
-                        const encodedUri = encodeURI(csvContent);
-                        const link = document.createElement("a");
-                        link.setAttribute("href", encodedUri);
-                        link.setAttribute("download", `servego_waitlist_${Date.now()}.csv`);
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                      disabled={waitlist.length === 0}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#E06D3E] text-white text-xs font-bold rounded-xl shadow cursor-pointer hover:opacity-90 disabled:opacity-50"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Export Waitlist CSV
-                    </button>
-                  </div>
+                    const matchCity =
+                      !wlCityFilter ||
+                      (w.city || "").toLowerCase().includes(wlCityFilter.toLowerCase());
+                    
+                    const matchService =
+                      !wlServiceFilter || w.interestedService === wlServiceFilter;
+                    
+                    const matchStatus =
+                      !wlStatusFilter || (w.status || "pending") === wlStatusFilter;
 
-                  {/* Waitlist Dashboard Stats Row */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                      { 
-                        label: "Total Registrations", 
-                        val: waitlist.length, 
-                        icon: Users, 
-                        color: "text-blue-500" 
-                      },
-                      { 
-                        label: "Today's Signups", 
-                        val: waitlist.filter(w => {
-                          if (!w.createdAt?.seconds) return false;
-                          const d = new Date(w.createdAt.seconds * 1000);
-                          const today = new Date();
-                          return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-                        }).length, 
-                        icon: Clock, 
-                        color: "text-emerald-500" 
-                      },
-                      { 
-                        label: "Most Requested Service", 
-                        val: (() => {
-                          if (waitlist.length === 0) return "None";
-                          const counts: any = {};
-                          waitlist.forEach(w => { counts[w.interestedService] = (counts[w.interestedService] || 0) + 1; });
-                          const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
-                          const matched = SERVICES_LIST.find(s => s.id === sorted[0]);
-                          return matched ? matched.name : (sorted[0] || "None");
-                        })(), 
-                        icon: ClipboardList, 
-                        color: "text-[#E06D3E]" 
-                      },
-                      { 
-                        label: "Top Waitlist City", 
-                        val: (() => {
-                          if (waitlist.length === 0) return "None";
-                          const counts: any = {};
-                          waitlist.forEach(w => { counts[w.city] = (counts[w.city] || 0) + 1; });
-                          const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
-                          return sorted[0] || "None";
-                        })(), 
-                        icon: MapPin, 
-                        color: "text-indigo-500" 
-                      }
-                    ].map((stat, idx) => {
-                      const Icon = stat.icon;
-                      return (
-                        <div key={idx} className="bg-card border border-border/60 p-6 rounded-2xl shadow-sm space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase">{stat.label}</span>
-                            <Icon className={`w-4 h-4 ${stat.color}`} />
+                    return matchSearch && matchCity && matchService && matchStatus;
+                  })
+                  .sort((a, b) => (b.waitlistPosition || 0) - (a.waitlistPosition || 0));
+
+                const totalWlItems = filteredWaitlist.length;
+                const totalWlPages = Math.ceil(totalWlItems / wlItemsPerPage) || 1;
+                const paginatedWaitlist = filteredWaitlist.slice(
+                  (wlCurrentPage - 1) * wlItemsPerPage,
+                  wlCurrentPage * wlItemsPerPage
+                );
+
+                // Extract unique cities for filtering dropdown
+                const uniqueCities = Array.from(new Set(waitlist.map(w => w.city || "").filter(Boolean)));
+
+                return (
+                  <div className="space-y-8">
+                    {/* Waitlist Header Row */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <h2 className="text-xl font-black text-foreground">Pre-Launch Waitlist Database</h2>
+                        <p className="text-xs text-muted-foreground mt-1">Review registrations, manage follow-up contact status, and analyze pre-launch leads.</p>
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          const headers = ["Position", "Full Name", "Mobile Number", "City", "Area", "Service ID", "Status", "IP Address", "Device", "Browser", "Referred By", "Referrals", "Notes", "Registration Date"];
+                          const rows = filteredWaitlist.map(w => [
+                            w.waitlistPosition || "",
+                            w.name || "",
+                            w.mobile || "",
+                            w.city || "",
+                            w.area || "",
+                            w.interestedService || "",
+                            w.status || "pending",
+                            w.ip || "unknown",
+                            w.device || "unknown",
+                            w.browser || "unknown",
+                            w.referredBy || "",
+                            w.referralCount || 0,
+                            w.notes || "",
+                            w.createdAt?.seconds ? new Date(w.createdAt.seconds * 1000).toLocaleString() : ""
+                          ]);
+                          const csvContent = "data:text/csv;charset=utf-8," 
+                            + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+                          const encodedUri = encodeURI(csvContent);
+                          const link = document.createElement("a");
+                          link.setAttribute("href", encodedUri);
+                          link.setAttribute("download", `servego_waitlist_${Date.now()}.csv`);
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        disabled={filteredWaitlist.length === 0}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#E06D3E] text-white text-xs font-bold rounded-xl shadow cursor-pointer hover:opacity-90 disabled:opacity-50"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Export Waitlist CSV
+                      </button>
+                    </div>
+
+                    {/* Waitlist Dashboard Stats Row */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                      {[
+                        { 
+                          label: "Total Registrations", 
+                          val: waitlist.length, 
+                          icon: Users, 
+                          color: "text-blue-500" 
+                        },
+                        { 
+                          label: "Today's Signups", 
+                          val: waitlist.filter(w => {
+                            if (!w.createdAt?.seconds) return false;
+                            const d = new Date(w.createdAt.seconds * 1000);
+                            const today = new Date();
+                            return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+                          }).length, 
+                          icon: Clock, 
+                          color: "text-emerald-500" 
+                        },
+                        { 
+                          label: "Most Requested Service", 
+                          val: (() => {
+                            if (waitlist.length === 0) return "None";
+                            const counts: any = {};
+                            waitlist.forEach(w => { counts[w.interestedService] = (counts[w.interestedService] || 0) + 1; });
+                            const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+                            const matched = SERVICES_LIST.find(s => s.id === sorted[0]);
+                            return matched ? matched.name : (sorted[0] || "None");
+                          })(), 
+                          icon: ClipboardList, 
+                          color: "text-[#E06D3E]" 
+                        },
+                        { 
+                          label: "Top Waitlist City", 
+                          val: (() => {
+                            if (waitlist.length === 0) return "None";
+                            const counts: any = {};
+                            waitlist.forEach(w => { counts[w.city] = (counts[w.city] || 0) + 1; });
+                            const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+                            return sorted[0] || "None";
+                          })(), 
+                          icon: MapPin, 
+                          color: "text-indigo-500" 
+                        }
+                      ].map((stat, idx) => {
+                        const Icon = stat.icon;
+                        return (
+                          <div key={idx} className="bg-card border border-border/60 p-6 rounded-2xl shadow-sm space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{stat.label}</span>
+                              <Icon className={`w-4 h-4 ${stat.color}`} />
+                            </div>
+                            <div className="text-xl font-black truncate">{stat.val}</div>
                           </div>
-                          <div className="text-xl font-black truncate">{stat.val}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Waitlist grid/table manager */}
-                  <div className="bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="p-4 border-b border-border/60 bg-muted/20 flex flex-wrap gap-4 items-center justify-between">
-                      <span className="text-xs font-bold text-foreground">Registered Waitlist Members ({waitlist.length})</span>
+                        );
+                      })}
                     </div>
-                    
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead className="bg-muted/40 font-bold border-b border-border/60 text-muted-foreground">
-                          <tr>
-                            <th className="px-6 py-3.5">Pos</th>
-                            <th className="px-6 py-3.5">Name</th>
-                            <th className="px-6 py-3.5">Contact Details</th>
-                            <th className="px-6 py-3.5">Location</th>
-                            <th className="px-6 py-3.5">Interested Service</th>
-                            <th className="px-6 py-3.5">IP Address</th>
-                            <th className="px-6 py-3.5">Date Joined</th>
-                            <th className="px-6 py-3.5">Status</th>
-                            <th className="px-6 py-3.5 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/60">
-                          {waitlist
-                            .sort((a, b) => (b.waitlistPosition || 0) - (a.waitlistPosition || 0))
-                            .map((w) => {
+
+                    {/* Search & Filter Options Bar */}
+                    <div className="bg-card border border-border/60 rounded-3xl p-5 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">Search Name / Mobile</label>
+                        <input 
+                          type="text"
+                          value={wlSearch}
+                          onChange={(e) => { setWlSearch(e.target.value); setWlCurrentPage(1); }}
+                          placeholder="e.g. Shubham"
+                          className="w-full px-3.5 py-2 bg-muted/40 border border-border rounded-xl text-xs focus:outline-none focus:border-primary text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">Filter by City</label>
+                        <select
+                          value={wlCityFilter}
+                          onChange={(e) => { setWlCityFilter(e.target.value); setWlCurrentPage(1); }}
+                          className="w-full px-3.5 py-2 bg-muted/40 border border-border rounded-xl text-xs focus:outline-none focus:border-primary text-foreground"
+                        >
+                          <option value="">All Cities</option>
+                          {uniqueCities.map(city => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">Filter by Service</label>
+                        <select
+                          value={wlServiceFilter}
+                          onChange={(e) => { setWlServiceFilter(e.target.value); setWlCurrentPage(1); }}
+                          className="w-full px-3.5 py-2 bg-muted/40 border border-border rounded-xl text-xs focus:outline-none focus:border-primary text-foreground"
+                        >
+                          <option value="">All Services</option>
+                          {SERVICES_LIST.map(srv => (
+                            <option key={srv.id} value={srv.id}>{srv.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">Filter by Status</label>
+                        <select
+                          value={wlStatusFilter}
+                          onChange={(e) => { setWlStatusFilter(e.target.value); setWlCurrentPage(1); }}
+                          className="w-full px-3.5 py-2 bg-muted/40 border border-border rounded-xl text-xs focus:outline-none focus:border-primary text-foreground"
+                        >
+                          <option value="">All Statuses</option>
+                          <option value="pending">Pending</option>
+                          <option value="contacted">Contacted</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Waitlist grid/table manager */}
+                    <div className="bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm">
+                      <div className="p-4 border-b border-border/60 bg-muted/20 flex flex-wrap gap-4 items-center justify-between">
+                        <span className="text-xs font-bold text-foreground">Registered Waitlist Members ({filteredWaitlist.length} shown)</span>
+                      </div>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead className="bg-muted/40 font-bold border-b border-border/60 text-muted-foreground">
+                            <tr>
+                              <th className="px-6 py-3.5">Pos</th>
+                              <th className="px-6 py-3.5">Name</th>
+                              <th className="px-6 py-3.5">Contact Details</th>
+                              <th className="px-6 py-3.5">Location</th>
+                              <th className="px-6 py-3.5">Interested Service</th>
+                              <th className="px-6 py-3.5">Referral Details</th>
+                              <th className="px-6 py-3.5">IP & Device</th>
+                              <th className="px-6 py-3.5">Date Joined</th>
+                              <th className="px-6 py-3.5">Notes</th>
+                              <th className="px-6 py-3.5">Status</th>
+                              <th className="px-6 py-3.5 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/60">
+                            {paginatedWaitlist.map((w) => {
                               const srv = SERVICES_LIST.find(s => s.id === w.interestedService);
                               return (
                                 <tr key={w.id} className="hover:bg-muted/5 transition-colors">
@@ -3647,11 +3747,57 @@ export default function AdminDashboardPage() {
                                       {srv ? srv.name : w.interestedService}
                                     </span>
                                   </td>
-                                  <td className="px-6 py-4 text-muted-foreground">{w.ip || "unknown"}</td>
+                                  <td className="px-6 py-4">
+                                    <div className="font-bold text-foreground">{w.referralCount || 0} Invites</div>
+                                    {w.referredBy && (
+                                      <div className="text-[10px] text-muted-foreground">Referred by: {w.referredBy}</div>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-foreground">{w.ip || "unknown"}</div>
+                                    <div className="text-[9px] text-muted-foreground uppercase">{w.device || "unknown"} • {w.browser || "unknown"}</div>
+                                  </td>
                                   <td className="px-6 py-4 text-muted-foreground">
                                     {w.createdAt?.seconds 
                                       ? new Date(w.createdAt.seconds * 1000).toLocaleString() 
                                       : "Just now"}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    {editingWlNotes === w.mobile ? (
+                                      <div className="flex gap-1.5 items-center">
+                                        <input 
+                                          type="text"
+                                          value={wlNotesInput}
+                                          onChange={(e) => setWlNotesInput(e.target.value)}
+                                          className="px-2 py-1 border border-border rounded text-[11px] bg-muted/40 text-foreground w-[120px] focus:outline-none"
+                                          placeholder="Add note..."
+                                        />
+                                        <button
+                                          onClick={async () => {
+                                            try {
+                                              await updateDoc(doc(db, "waitlist", w.mobile), { notes: wlNotesInput });
+                                              setEditingWlNotes(null);
+                                            } catch (e: any) {
+                                              alert("Failed to save note: " + e.message);
+                                            }
+                                          }}
+                                          className="px-2 py-1 bg-[#E06D3E] text-white rounded text-[10px] font-bold cursor-pointer"
+                                        >
+                                          Save
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div 
+                                        onClick={() => {
+                                          setEditingWlNotes(w.mobile);
+                                          setWlNotesInput(w.notes || "");
+                                        }}
+                                        className="text-muted-foreground italic cursor-pointer hover:text-foreground hover:underline truncate max-w-[130px]"
+                                        title="Click to edit notes"
+                                      >
+                                        {w.notes || "Add note..."}
+                                      </div>
+                                    )}
                                   </td>
                                   <td className="px-6 py-4">
                                     <button
@@ -3692,19 +3838,48 @@ export default function AdminDashboardPage() {
                                 </tr>
                               );
                             })}
-                          {waitlist.length === 0 && (
-                            <tr>
-                              <td colSpan={9} className="px-6 py-12 text-center text-muted-foreground italic bg-background/50">
-                                No waitlist registrations recorded yet.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                            {filteredWaitlist.length === 0 && (
+                              <tr>
+                                <td colSpan={11} className="px-6 py-12 text-center text-muted-foreground italic bg-background/50">
+                                  No waitlist registrations found matching the filters.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {totalWlPages > 1 && (
+                        <div className="p-4 border-t border-border/60 flex items-center justify-between bg-muted/10">
+                          <span className="text-xs text-muted-foreground">
+                            Showing {(wlCurrentPage - 1) * wlItemsPerPage + 1} to {Math.min(wlCurrentPage * wlItemsPerPage, totalWlItems)} of {totalWlItems} entries
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setWlCurrentPage(p => Math.max(1, p - 1))}
+                              disabled={wlCurrentPage === 1}
+                              className="px-3 py-1 bg-card border border-border/80 rounded-lg text-xs font-bold disabled:opacity-40 cursor-pointer text-foreground"
+                            >
+                              Previous
+                            </button>
+                            <span className="text-xs font-bold px-2 py-1 text-foreground">
+                              Page {wlCurrentPage} of {totalWlPages}
+                            </span>
+                            <button
+                              onClick={() => setWlCurrentPage(p => Math.min(totalWlPages, p + 1))}
+                              disabled={wlCurrentPage === totalWlPages}
+                              className="px-3 py-1 bg-card border border-border/80 rounded-lg text-xs font-bold disabled:opacity-40 cursor-pointer text-foreground"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Website Settings Tab Panel */}
               {activeTab === "settings" && (
