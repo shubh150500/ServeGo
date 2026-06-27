@@ -504,8 +504,12 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {(services.length > 0 ? services : SERVICES_LIST)
+          {SERVICES_LIST
             .filter((s) => s.type === "partner")
+            .map((fallback) => {
+              const firebaseMatch = services.find((fs) => fs.id === fallback.id);
+              return firebaseMatch ? { ...fallback, ...firebaseMatch } : fallback;
+            })
             .map((service) => {
               const isLive = toggles.localPartnerServicesEnabled;
               return (
@@ -561,8 +565,12 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {(services.length > 0 ? services : SERVICES_LIST)
+          {SERVICES_LIST
             .filter((s) => s.type === "vehicle")
+            .map((fallback) => {
+              const firebaseMatch = services.find((fs) => fs.id === fallback.id);
+              return firebaseMatch ? { ...fallback, ...firebaseMatch } : fallback;
+            })
             .map((service) => {
               const isLive = toggles.vehicleRentalEnabled;
               return (
