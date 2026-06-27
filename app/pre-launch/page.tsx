@@ -606,7 +606,7 @@ export default function PreLaunchPage() {
           <div className="lg:col-span-6 space-y-6">
             <div>
               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Interactive Walkthrough</span>
-              <h2 className="text-3xl font-bold tracking-tight mt-1 text-white">Explore the Premium UI Preview</h2>
+              <h3 className="text-3xl font-bold tracking-tight mt-1 text-white">Explore the Premium UI Preview</h3>
               <p className="text-xs text-zinc-500 mt-2 max-w-md">Our app is engineered for speed, ease, and security. Cycle through features or click a tab to see previews inside the smartphone mockup.</p>
             </div>
 
@@ -770,7 +770,7 @@ export default function PreLaunchPage() {
         <section className="space-y-12 py-20 border-t border-white/5 relative z-10">
           <div className="text-center space-y-3">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Available Categories</span>
-            <h2 className="text-3xl font-bold tracking-tight text-white">Redefined Local Offerings</h2>
+            <h3 className="text-3xl font-bold tracking-tight text-white">Redefined Local Offerings</h3>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -820,7 +820,7 @@ export default function PreLaunchPage() {
         <section className="space-y-12 py-20 border-t border-white/5 relative z-10">
           <div className="text-center space-y-3">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Inquiries & Answers</span>
-            <h2 className="text-3xl font-bold tracking-tight text-white">Frequently Asked Questions</h2>
+            <h3 className="text-3xl font-bold tracking-tight text-white">Frequently Asked Questions</h3>
           </div>
 
           <div className="max-w-3xl mx-auto space-y-4">
