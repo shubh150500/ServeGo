@@ -57,7 +57,10 @@ import {
   Edit,
   Check,
   X,
-  Clock
+  Clock,
+  List,
+  Settings,
+  Download
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -82,6 +85,8 @@ export default function AdminDashboardPage() {
     | "hardware-shops"
     | "vehicle-rental"
     | "partner-analytics"
+    | "waitlist"
+    | "settings"
   >("overview");
 
   // Data State
@@ -122,9 +127,20 @@ export default function AdminDashboardPage() {
   const [shops, setShops] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [interests, setInterests] = useState<any[]>([]);
+  const [waitlist, setWaitlist] = useState<any[]>([]);
   const [toggles, setToggles] = useState<any>({
     localPartnerServicesEnabled: false,
-    vehicleRentalEnabled: false
+    vehicleRentalEnabled: false,
+    websiteStatus: "LIVE",
+    launchDate: "2026-08-16T00:00:00",
+    launchMessage: "We are launching very soon in your area. Register early to claim exclusive benefits.",
+    heroHeading: "Aurangabad's Smartest Home Services Platform",
+    heroSubheading: "Connecting customers with verified professionals faster than ever before.",
+    countdownVisibility: true,
+    waitlistVisibility: true,
+    citiesPlanned: 3,
+    servicesPlanned: 11,
+    professionalsTarget: 150
   });
 
   // Shop CRUD State
@@ -328,6 +344,15 @@ export default function AdminDashboardPage() {
           (err) => console.error("Interests real-time listener failed:", err)
         );
 
+        // 12. Subscribe to Waitlist Collection
+        const unsubWaitlist = onSnapshot(
+          collection(db, "waitlist"),
+          (snap) => {
+            setWaitlist(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          },
+          (err) => console.error("Waitlist real-time listener failed:", err)
+        );
+
         unsubscribes = [
           unsubBookings,
           unsubWorkers,
@@ -339,7 +364,8 @@ export default function AdminDashboardPage() {
           unsubShops,
           unsubVehicles,
           unsubToggles,
-          unsubInterests
+          unsubInterests,
+          unsubWaitlist
         ];
       }
       setAuthLoading(false);
@@ -1061,11 +1087,13 @@ export default function AdminDashboardPage() {
             { id: "overview", label: "Overview", icon: LayoutDashboard },
             { id: "leads", label: "Leads / Bookings", icon: FileText, badge: newLeads },
             { id: "workers", label: "Worker Database", icon: Users },
+            { id: "waitlist", label: "Pre-Launch Waitlist", icon: List, badge: waitlist.filter(w => w.status === "pending").length },
             { id: "services", label: "Services Config", icon: ClipboardList },
             { id: "complaints", label: "Complaints Tracker", icon: AlertTriangle },
             { id: "reviews", label: "Customer Reviews", icon: Star },
             { id: "revenue", label: "Assurance Revenue", icon: DollarSign },
             { id: "logs", label: "Audit Logs", icon: History },
+            { id: "settings", label: "Website Settings", icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -3473,6 +3501,392 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+              {/* Pre-Launch Waitlist Manager Panel */}
+              {activeTab === "waitlist" && (
+                <div className="space-y-8">
+                  {/* Waitlist Header Row */}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h2 className="text-xl font-black text-foreground">Pre-Launch Waitlist Database</h2>
+                      <p className="text-xs text-muted-foreground mt-1">Review registrations, manage follow-up contact status, and analyze pre-launch leads.</p>
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        const headers = ["Position", "Full Name", "Mobile Number", "City", "Area", "Service ID", "Status", "IP Address", "Registration Date"];
+                        const rows = waitlist.map(w => [
+                          w.waitlistPosition || "",
+                          w.name || "",
+                          w.mobile || "",
+                          w.city || "",
+                          w.area || "",
+                          w.interestedService || "",
+                          w.status || "pending",
+                          w.ip || "unknown",
+                          w.createdAt?.seconds ? new Date(w.createdAt.seconds * 1000).toLocaleString() : ""
+                        ]);
+                        const csvContent = "data:text/csv;charset=utf-8," 
+                          + [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", `servego_waitlist_${Date.now()}.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      disabled={waitlist.length === 0}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#E06D3E] text-white text-xs font-bold rounded-xl shadow cursor-pointer hover:opacity-90 disabled:opacity-50"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Export Waitlist CSV
+                    </button>
+                  </div>
+
+                  {/* Waitlist Dashboard Stats Row */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[
+                      { 
+                        label: "Total Registrations", 
+                        val: waitlist.length, 
+                        icon: Users, 
+                        color: "text-blue-500" 
+                      },
+                      { 
+                        label: "Today's Signups", 
+                        val: waitlist.filter(w => {
+                          if (!w.createdAt?.seconds) return false;
+                          const d = new Date(w.createdAt.seconds * 1000);
+                          const today = new Date();
+                          return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+                        }).length, 
+                        icon: Clock, 
+                        color: "text-emerald-500" 
+                      },
+                      { 
+                        label: "Most Requested Service", 
+                        val: (() => {
+                          if (waitlist.length === 0) return "None";
+                          const counts: any = {};
+                          waitlist.forEach(w => { counts[w.interestedService] = (counts[w.interestedService] || 0) + 1; });
+                          const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+                          const matched = SERVICES_LIST.find(s => s.id === sorted[0]);
+                          return matched ? matched.name : (sorted[0] || "None");
+                        })(), 
+                        icon: ClipboardList, 
+                        color: "text-[#E06D3E]" 
+                      },
+                      { 
+                        label: "Top Waitlist City", 
+                        val: (() => {
+                          if (waitlist.length === 0) return "None";
+                          const counts: any = {};
+                          waitlist.forEach(w => { counts[w.city] = (counts[w.city] || 0) + 1; });
+                          const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+                          return sorted[0] || "None";
+                        })(), 
+                        icon: MapPin, 
+                        color: "text-indigo-500" 
+                      }
+                    ].map((stat, idx) => {
+                      const Icon = stat.icon;
+                      return (
+                        <div key={idx} className="bg-card border border-border/60 p-6 rounded-2xl shadow-sm space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">{stat.label}</span>
+                            <Icon className={`w-4 h-4 ${stat.color}`} />
+                          </div>
+                          <div className="text-xl font-black truncate">{stat.val}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Waitlist grid/table manager */}
+                  <div className="bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-border/60 bg-muted/20 flex flex-wrap gap-4 items-center justify-between">
+                      <span className="text-xs font-bold text-foreground">Registered Waitlist Members ({waitlist.length})</span>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead className="bg-muted/40 font-bold border-b border-border/60 text-muted-foreground">
+                          <tr>
+                            <th className="px-6 py-3.5">Pos</th>
+                            <th className="px-6 py-3.5">Name</th>
+                            <th className="px-6 py-3.5">Contact Details</th>
+                            <th className="px-6 py-3.5">Location</th>
+                            <th className="px-6 py-3.5">Interested Service</th>
+                            <th className="px-6 py-3.5">IP Address</th>
+                            <th className="px-6 py-3.5">Date Joined</th>
+                            <th className="px-6 py-3.5">Status</th>
+                            <th className="px-6 py-3.5 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/60">
+                          {waitlist
+                            .sort((a, b) => (b.waitlistPosition || 0) - (a.waitlistPosition || 0))
+                            .map((w) => {
+                              const srv = SERVICES_LIST.find(s => s.id === w.interestedService);
+                              return (
+                                <tr key={w.id} className="hover:bg-muted/5 transition-colors">
+                                  <td className="px-6 py-4 font-black text-[#E06D3E]">#{w.waitlistPosition}</td>
+                                  <td className="px-6 py-4">
+                                    <div className="font-bold text-foreground">{w.name}</div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="font-semibold text-foreground">{w.mobile}</div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="font-semibold text-foreground">{w.city}</div>
+                                    <div className="text-[10px] text-muted-foreground">{w.area || "No Area specified"}</div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold">
+                                      {srv ? srv.name : w.interestedService}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 text-muted-foreground">{w.ip || "unknown"}</td>
+                                  <td className="px-6 py-4 text-muted-foreground">
+                                    {w.createdAt?.seconds 
+                                      ? new Date(w.createdAt.seconds * 1000).toLocaleString() 
+                                      : "Just now"}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          const nextStatus = w.status === "contacted" ? "pending" : "contacted";
+                                          await updateDoc(doc(db, "waitlist", w.mobile), { status: nextStatus });
+                                        } catch (e: any) {
+                                          alert("Failed to toggle status: " + e.message);
+                                        }
+                                      }}
+                                      className={`px-2 py-0.5 rounded text-[9px] font-black uppercase cursor-pointer ${
+                                        w.status === "contacted" 
+                                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200" 
+                                          : "bg-amber-100 text-amber-800 border border-amber-200"
+                                      }`}
+                                    >
+                                      {w.status || "pending"}
+                                    </button>
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(`Remove ${w.name} from the waitlist?`)) {
+                                          try {
+                                            await deleteDoc(doc(db, "waitlist", w.mobile));
+                                          } catch (e: any) {
+                                            alert("Failed to delete entry: " + e.message);
+                                          }
+                                        }
+                                      }}
+                                      className="text-rose-500 hover:text-rose-700 font-bold p-1 cursor-pointer"
+                                      title="Remove User"
+                                    >
+                                      <Trash2 className="w-4 h-4 inline" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          {waitlist.length === 0 && (
+                            <tr>
+                              <td colSpan={9} className="px-6 py-12 text-center text-muted-foreground italic bg-background/50">
+                                No waitlist registrations recorded yet.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Website Settings Tab Panel */}
+              {activeTab === "settings" && (
+                <div className="space-y-8 max-w-4xl">
+                  <div>
+                    <h2 className="text-xl font-black text-foreground">Global Platform Settings</h2>
+                    <p className="text-xs text-muted-foreground mt-1">Configure launch metrics, website modes, and countdown dates in real-time.</p>
+                  </div>
+
+                  <form 
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      try {
+                        setSaving(true);
+                        await updateDoc(doc(db, "system_config", "toggles"), {
+                          websiteStatus: toggles.websiteStatus,
+                          launchDate: toggles.launchDate,
+                          launchMessage: toggles.launchMessage,
+                          heroHeading: toggles.heroHeading,
+                          heroSubheading: toggles.heroSubheading,
+                          countdownVisibility: toggles.countdownVisibility,
+                          waitlistVisibility: toggles.waitlistVisibility,
+                          citiesPlanned: parseInt(toggles.citiesPlanned, 10) || 0,
+                          servicesPlanned: parseInt(toggles.servicesPlanned, 10) || 0,
+                          professionalsTarget: parseInt(toggles.professionalsTarget, 10) || 0
+                        });
+                        setSaving(false);
+                        alert("Global platform settings updated successfully!");
+                      } catch (err: any) {
+                        setSaving(false);
+                        alert("Failed to save config: " + err.message);
+                      }
+                    }}
+                    className="bg-card border border-border/60 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm"
+                  >
+                    
+                    {/* Website status mode toggle */}
+                    <div className="space-y-2 border-b border-border/60 pb-6">
+                      <label className="text-sm font-bold text-foreground block">Global Website Status Mode *</label>
+                      <div className="flex gap-6 mt-3">
+                        <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs">
+                          <input 
+                            type="radio" 
+                            name="websiteStatus" 
+                            value="LIVE"
+                            checked={toggles.websiteStatus === "LIVE"}
+                            onChange={(e) => setToggles((prev: any) => ({ ...prev, websiteStatus: "LIVE" }))}
+                            className="w-4 h-4 accent-primary" 
+                          />
+                          <span>ACTIVE / LIVE (Normal website is visible to public)</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs">
+                          <input 
+                            type="radio" 
+                            name="websiteStatus" 
+                            value="PRE_LAUNCH"
+                            checked={toggles.websiteStatus === "PRE_LAUNCH"}
+                            onChange={(e) => setToggles((prev: any) => ({ ...prev, websiteStatus: "PRE_LAUNCH" }))}
+                            className="w-4 h-4 accent-primary" 
+                          />
+                          <span className="text-amber-600 font-bold">PRE-LAUNCH MODE (All traffic redirects to waitlist landing page)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Launch date configuration */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground/80">Launch Date & Time (ISO 8601)</label>
+                        <input 
+                          type="text" 
+                          required
+                          placeholder="e.g. 2026-08-16T00:00:00"
+                          value={toggles.launchDate}
+                          onChange={(e) => setToggles((prev: any) => ({ ...prev, launchDate: e.target.value }))}
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                        />
+                      </div>
+
+                      {/* Stats targets config */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground/80">Planned Cities Target</label>
+                        <input 
+                          type="number" 
+                          required
+                          min="0"
+                          value={toggles.citiesPlanned}
+                          onChange={(e) => setToggles((prev: any) => ({ ...prev, citiesPlanned: e.target.value }))}
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground/80">Available Services Target</label>
+                        <input 
+                          type="number" 
+                          required
+                          min="0"
+                          value={toggles.servicesPlanned}
+                          onChange={(e) => setToggles((prev: any) => ({ ...prev, servicesPlanned: e.target.value }))}
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground/80">Verified Professionals Target</label>
+                        <input 
+                          type="number" 
+                          required
+                          min="0"
+                          value={toggles.professionalsTarget}
+                          onChange={(e) => setToggles((prev: any) => ({ ...prev, professionalsTarget: e.target.value }))}
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-foreground/80">Launch Message Alert Banner</label>
+                      <textarea 
+                        rows={2}
+                        value={toggles.launchMessage}
+                        onChange={(e) => setToggles((prev: any) => ({ ...prev, launchMessage: e.target.value }))}
+                        className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm resize-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-foreground/80">Pre-Launch Hero Heading</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={toggles.heroHeading}
+                        onChange={(e) => setToggles((prev: any) => ({ ...prev, heroHeading: e.target.value }))}
+                        className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-foreground/80">Pre-Launch Hero Subheading</label>
+                      <textarea 
+                        rows={2}
+                        required
+                        value={toggles.heroSubheading}
+                        onChange={(e) => setToggles((prev: any) => ({ ...prev, heroSubheading: e.target.value }))}
+                        className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm resize-none"
+                      />
+                    </div>
+
+                    <div className="flex gap-8 border-t border-border/60 pt-6">
+                      <label className="flex items-center gap-2.5 cursor-pointer font-bold text-xs">
+                        <input 
+                          type="checkbox" 
+                          checked={toggles.countdownVisibility}
+                          onChange={(e) => setToggles((prev: any) => ({ ...prev, countdownVisibility: e.target.checked }))}
+                          className="w-4.5 h-4.5 rounded accent-primary cursor-pointer"
+                        />
+                        <span>Enable Countdown Clock widget</span>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 cursor-pointer font-bold text-xs">
+                        <input 
+                          type="checkbox" 
+                          checked={toggles.waitlistVisibility}
+                          onChange={(e) => setToggles((prev: any) => ({ ...prev, waitlistVisibility: e.target.checked }))}
+                          className="w-4.5 h-4.5 rounded accent-primary cursor-pointer"
+                        />
+                        <span>Enable Waitlist Registration Form</span>
+                      </label>
+                    </div>
+
+                    <div className="flex gap-4 border-t border-border/60 pt-6">
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        className="px-6 py-3.5 bg-primary text-primary-foreground font-bold rounded-xl text-xs cursor-pointer shadow hover:shadow-primary/30 disabled:opacity-60 flex items-center gap-2 uppercase tracking-wider"
+                      >
+                        {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                        {saving ? "Saving Configurations..." : "Save Platform Configurations"}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               )}
             </>
