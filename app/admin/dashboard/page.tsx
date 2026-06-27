@@ -384,7 +384,11 @@ export default function AdminDashboardPage() {
       for (const file of shopImageFiles) {
         try {
           const fileRef = ref(storage, `shops/${Date.now()}_${file.name}`);
-          await uploadBytes(fileRef, file);
+          await promiseWithTimeout(
+            uploadBytes(fileRef, file),
+            12000,
+            "Image upload timed out. Try a smaller image size."
+          );
           const url = await getDownloadURL(fileRef);
           uploadedUrls.push(url);
         } catch (uploadErr) {
@@ -416,13 +420,21 @@ export default function AdminDashboardPage() {
       };
 
       if (editingShop) {
-        await updateDoc(doc(db, "shops", editingShop.id), shopDocData);
+        await promiseWithTimeout(
+          updateDoc(doc(db, "shops", editingShop.id), shopDocData),
+          8000,
+          "Database write timed out. Please check your connection."
+        );
         await logAction("EDIT_SHOP", `Edited shop ${shopName} (ID: ${editingShop.id})`);
       } else {
-        await addDoc(collection(db, "shops"), {
-          ...shopDocData,
-          createdAt: serverTimestamp()
-        });
+        await promiseWithTimeout(
+          addDoc(collection(db, "shops"), {
+            ...shopDocData,
+            createdAt: serverTimestamp()
+          }),
+          8000,
+          "Database write timed out. Please check your connection."
+        );
         await logAction("ADD_SHOP", `Created new shop ${shopName}`);
       }
 
@@ -483,7 +495,11 @@ export default function AdminDashboardPage() {
       for (const file of vehicleImageFiles) {
         try {
           const fileRef = ref(storage, `vehicles/${Date.now()}_${file.name}`);
-          await uploadBytes(fileRef, file);
+          await promiseWithTimeout(
+            uploadBytes(fileRef, file),
+            12000,
+            "Image upload timed out. Try a smaller image size."
+          );
           const url = await getDownloadURL(fileRef);
           uploadedUrls.push(url);
         } catch (uploadErr) {
@@ -510,13 +526,21 @@ export default function AdminDashboardPage() {
       };
 
       if (editingVehicle) {
-        await updateDoc(doc(db, "vehicles", editingVehicle.id), vehicleDocData);
+        await promiseWithTimeout(
+          updateDoc(doc(db, "vehicles", editingVehicle.id), vehicleDocData),
+          8000,
+          "Database write timed out. Please check your connection."
+        );
         await logAction("EDIT_VEHICLE", `Edited vehicle ${vehicleName} (ID: ${editingVehicle.id})`);
       } else {
-        await addDoc(collection(db, "vehicles"), {
-          ...vehicleDocData,
-          createdAt: serverTimestamp()
-        });
+        await promiseWithTimeout(
+          addDoc(collection(db, "vehicles"), {
+            ...vehicleDocData,
+            createdAt: serverTimestamp()
+          }),
+          8000,
+          "Database write timed out. Please check your connection."
+        );
         await logAction("ADD_VEHICLE", `Created new vehicle ${vehicleName}`);
       }
 
