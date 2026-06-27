@@ -88,5 +88,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // 12. Launch Interests — anyone can register interest (public form)
+    match /launch_interests/{interestId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
   }
 }

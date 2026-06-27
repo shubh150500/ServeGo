@@ -92,6 +92,7 @@ export default function AdminDashboardPage() {
   const [complaints, setComplaints] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Services State
   const [services, setServices] = useState<any[]>([]);
@@ -376,7 +377,7 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      setLoadingData(true);
+      setSaving(true);
       
       // Upload files or fallback base64
       let uploadedUrls: string[] = [...shopExistingImages];
@@ -443,11 +444,11 @@ export default function AdminDashboardPage() {
       setShopImageFiles([]);
       setShopExistingImages([]);
       setShopStatus("active");
-      setLoadingData(false);
+      setSaving(false);
       alert(editingShop ? "Shop profile updated successfully!" : "New partner shop registered successfully!");
     } catch (err: any) {
       console.error(err);
-      setLoadingData(false);
+      setSaving(false);
       alert("Failed to save shop: " + err.message);
     }
   };
@@ -476,7 +477,7 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      setLoadingData(true);
+      setSaving(true);
 
       let uploadedUrls: string[] = [...vehicleExistingImages];
       for (const file of vehicleImageFiles) {
@@ -534,11 +535,11 @@ export default function AdminDashboardPage() {
       setVehicleImageFiles([]);
       setVehicleExistingImages([]);
       setVehicleStatus("active");
-      setLoadingData(false);
+      setSaving(false);
       alert(editingVehicle ? "Vehicle profile updated successfully!" : "New vehicle registered successfully!");
     } catch (err: any) {
       console.error(err);
-      setLoadingData(false);
+      setSaving(false);
       alert("Failed to save vehicle: " + err.message);
     }
   };
@@ -2826,9 +2827,11 @@ export default function AdminDashboardPage() {
                         <div className="flex gap-4 border-t border-border/60 pt-6">
                           <button
                             type="submit"
-                            className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-sm cursor-pointer shadow hover:shadow-primary/30"
+                            disabled={saving}
+                            className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-sm cursor-pointer shadow hover:shadow-primary/30 disabled:opacity-60 flex items-center gap-2"
                           >
-                            {editingShop ? "Update Shop Profile" : "Register Partner Shop"}
+                            {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                            {saving ? "Saving..." : (editingShop ? "Update Shop Profile" : "Register Partner Shop")}
                           </button>
                           <button
                             type="button"
@@ -3101,28 +3104,33 @@ export default function AdminDashboardPage() {
                               className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-bold text-foreground/80">Daily Rent Price (₹) *</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="e.g. 1500"
-                              value={vehiclePrice}
-                              onChange={(e) => setVehiclePrice(e.target.value.replace(/[^0-9.]/g, ''))}
-                              className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-bold text-foreground/80">Service Area *</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="e.g. Gandhinagar, Patna"
-                              value={vehicleArea}
-                              onChange={(e) => setVehicleArea(e.target.value)}
-                              className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
-                            />
-                          </div>
+                        </div>
+
+                        {/* Daily Rent Price — full width row */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-foreground/80">Daily Rent Price (₹) *</label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            placeholder="e.g. 1500"
+                            value={vehiclePrice}
+                            onChange={(e) => setVehiclePrice(e.target.value.replace(/[^0-9.]/g, ''))}
+                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"
+                          />
+                        </div>
+
+                        {/* Service Area — full width row */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-foreground/80">Service Area *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Gandhinagar, Patna"
+                            value={vehicleArea}
+                            onChange={(e) => setVehicleArea(e.target.value)}
+                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"
+                          />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -3222,9 +3230,11 @@ export default function AdminDashboardPage() {
                         <div className="flex gap-4 border-t border-border/60 pt-6">
                           <button
                             type="submit"
-                            className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-sm cursor-pointer shadow hover:shadow-primary/30"
+                            disabled={saving}
+                            className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-sm cursor-pointer shadow hover:shadow-primary/30 disabled:opacity-60 flex items-center gap-2"
                           >
-                            {editingVehicle ? "Update Vehicle Details" : "Register Rental Vehicle"}
+                            {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                            {saving ? "Saving..." : (editingVehicle ? "Update Vehicle Details" : "Register Rental Vehicle")}
                           </button>
                           <button
                             type="button"
