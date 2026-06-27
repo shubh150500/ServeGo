@@ -497,13 +497,13 @@ export default function Home() {
         </div>
       </section>
       {/* Local Quick Delivery Section */}
-      <section id="local-delivery" className="py-16 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
-        <div className="flex items-center gap-3 mb-8">
-          <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase">Local Quick Delivery</h2>
-          <span className="px-2.5 py-0.5 bg-primary/15 text-primary text-[10px] font-black rounded-full uppercase tracking-wider">New</span>
+      <section id="local-delivery" className="py-12 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-xl md:text-2xl font-black tracking-tight text-foreground uppercase">LOCAL QUICK DELIVERY</h2>
+          <span className="px-2 py-0.5 bg-[#F4EBE1] text-[#A67C52] text-[10px] font-bold rounded-full uppercase tracking-wider">NEW</span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {(services.length > 0 ? services : SERVICES_LIST)
             .filter((s) => s.type === "partner")
             .map((service) => {
@@ -511,33 +511,36 @@ export default function Home() {
               return (
                 <div
                   key={service.id}
-                  className="bg-card border border-border/60 hover:border-primary/40 p-5 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:shadow-md"
+                  className="bg-[#FAF6F0] border border-[#EFE8DC] p-5 rounded-2xl flex flex-col justify-between"
                 >
-                  <div className="space-y-3">
-                    <div className="w-11 h-11 rounded-xl bg-primary/8 border border-border/40 flex items-center justify-center text-primary/70 overflow-hidden">
-                      <ServiceIcon name={service.iconName} className="w-5 h-5" />
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F5ECE2] flex items-center justify-center text-[#9c6d48] overflow-hidden">
+                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-sm md:text-base font-bold tracking-tight leading-snug">{service.name}</h3>
-                      <p className="text-muted-foreground text-[11px] leading-relaxed mt-1 line-clamp-2 hidden sm:block">{service.shortDescription}</p>
+                      <h3 className="text-base font-bold text-foreground leading-snug">{service.name}</h3>
+                      <p className="text-muted-foreground text-[11px] leading-normal mt-1 line-clamp-2">{service.shortDescription}</p>
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-col gap-2">
+                  <div className="mt-5 flex flex-col gap-2">
                     {isLive ? (
                       <Link
                         href={`/services/${service.id}`}
-                        className="w-full text-center py-2 bg-primary text-primary-foreground text-[11px] font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                        className="w-full text-center py-2.5 bg-[#E06D3E] text-white text-[11px] font-bold rounded-full shadow-sm hover:opacity-90 transition-all cursor-pointer"
                       >
-                        View Shops
+                        Book Now
                       </Link>
                     ) : (
                       <>
-                        <span className="inline-block w-fit px-3 py-1 bg-[#F97316] text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
-                          Coming Soon
-                        </span>
                         <button
                           onClick={() => handleComingSoonClick(service)}
-                          className="w-full py-2 bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground border border-border/50 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center"
+                          className="w-full text-center py-2 bg-[#E06D3E] text-white text-[11px] font-bold rounded-full shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                        >
+                          Coming Soon
+                        </button>
+                        <button
+                          onClick={() => handleComingSoonClick(service)}
+                          className="w-full py-2 bg-[#FAF6F0] hover:bg-[#F5ECE2] text-muted-foreground border border-[#E1D7C5] text-[11px] font-bold rounded-full transition-all cursor-pointer text-center"
                         >
                           Register for Launch
                         </button>
@@ -551,10 +554,10 @@ export default function Home() {
       </section>
 
       {/* Vehicle Rental Section */}
-      <section id="vehicle-rental" className="py-16 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
-        <div className="flex items-center gap-3 mb-8">
-          <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase">Vehicle Rentals</h2>
-          <span className="px-2.5 py-0.5 bg-primary/15 text-primary text-[10px] font-black rounded-full uppercase tracking-wider">New</span>
+      <section id="vehicle-rental" className="py-12 px-6 max-w-7xl mx-auto scroll-mt-6 border-t border-border/50">
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-xl md:text-2xl font-black tracking-tight text-foreground uppercase">VEHICLE RENTALS</h2>
+          <span className="px-2 py-0.5 bg-[#F4EBE1] text-[#A67C52] text-[10px] font-bold rounded-full uppercase tracking-wider">NEW</span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -565,33 +568,36 @@ export default function Home() {
               return (
                 <div
                   key={service.id}
-                  className="bg-card border border-border/60 hover:border-primary/40 p-5 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between hover:shadow-md"
+                  className="bg-[#FAF6F0] border border-[#EFE8DC] p-5 rounded-2xl flex flex-col justify-between"
                 >
-                  <div className="space-y-3">
-                    <div className="w-11 h-11 rounded-xl bg-primary/8 border border-border/40 flex items-center justify-center text-primary/70 overflow-hidden">
-                      <ServiceIcon name={service.iconName} className="w-5 h-5" />
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F5ECE2] flex items-center justify-center text-[#9c6d48] overflow-hidden">
+                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-sm md:text-base font-bold tracking-tight leading-snug">{service.name}</h3>
-                      <p className="text-muted-foreground text-[11px] leading-relaxed mt-1 line-clamp-2 hidden sm:block">{service.shortDescription}</p>
+                      <h3 className="text-base font-bold text-foreground leading-snug">{service.name}</h3>
+                      <p className="text-muted-foreground text-[11px] leading-normal mt-1 line-clamp-2">{service.shortDescription}</p>
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-col gap-2">
+                  <div className="mt-5 flex flex-col gap-2">
                     {isLive ? (
                       <Link
                         href={`/services/${service.id}`}
-                        className="w-full text-center py-2 bg-primary text-primary-foreground text-[11px] font-bold rounded-lg shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                        className="w-full text-center py-2.5 bg-[#E06D3E] text-white text-[11px] font-bold rounded-full shadow-sm hover:opacity-90 transition-all cursor-pointer"
                       >
-                        View Vehicles
+                        Book Now
                       </Link>
                     ) : (
                       <>
-                        <span className="inline-block w-fit px-3 py-1 bg-[#F97316] text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
-                          Coming Soon
-                        </span>
                         <button
                           onClick={() => handleComingSoonClick(service)}
-                          className="w-full py-2 bg-muted/60 hover:bg-primary/10 hover:text-primary text-muted-foreground border border-border/50 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center"
+                          className="w-full text-center py-2 bg-[#E06D3E] text-white text-[11px] font-bold rounded-full shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                        >
+                          Coming Soon
+                        </button>
+                        <button
+                          onClick={() => handleComingSoonClick(service)}
+                          className="w-full py-2 bg-[#FAF6F0] hover:bg-[#F5ECE2] text-muted-foreground border border-[#E1D7C5] text-[11px] font-bold rounded-full transition-all cursor-pointer text-center"
                         >
                           Register for Launch
                         </button>
