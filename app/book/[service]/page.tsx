@@ -308,9 +308,21 @@ export default function BookServicePage({ params }: PageProps) {
     setLoading(true);
 
     try {
-      // Ensure Razorpay SDK is loaded on the window
-      if (!(window as any).Razorpay && !rzpLoaded) {
-        throw new Error("Razorpay payment gateway is still loading. Please wait a few seconds and try again.");
+      // Ensure Razorpay SDK is loaded on the window, with a forceful fallback injector
+      if (!(window as any).Razorpay) {
+        await new Promise((resolve) => {
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+          // Wait up to 3 seconds
+          setTimeout(() => resolve(false), 3000);
+        });
+      }
+
+      if (!(window as any).Razorpay) {
+        throw new Error("Razorpay payment gateway failed to load. Please disable any AdBlocker (like Brave Shield) or check your internet connection.");
       }
 
       // 1. Create order on the serverless API
