@@ -114,7 +114,7 @@ export default function BookServicePage({ params }: PageProps) {
       }
       
       const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.src = "/razorpay-checkout.js";
       script.async = true;
       script.onload = () => {
         setRzpLoaded(true);
