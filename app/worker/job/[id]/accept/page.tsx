@@ -47,34 +47,26 @@ export default function WorkerAcceptJobPage({ params }: PageProps) {
         return;
       }
 
-      // Fetch booking
-      const bookingRef = doc(db, "bookings", bookingId);
-      const bookingSnap = await getDoc(bookingRef);
+      // Fetch details from secure server-side API bypassing client rules
+      const res = await fetch("/api/worker/job", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ bookingId, token }),
+      });
 
-      if (!bookingSnap.exists()) {
-        setAuthorized(false);
-        setLoading(false);
-        return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to retrieve job details.");
       }
 
-      const bookingData = bookingSnap.data();
-
-      // Security check: Verify token
-      if (bookingData.securityToken !== token) {
-        setAuthorized(false);
-        setLoading(false);
-        return;
-      }
-
-      setBooking({ id: bookingSnap.id, ...bookingData });
+      setBooking(data.booking);
       setAuthorized(true);
 
-      // Fetch worker details if assigned
-      if (bookingData.assignedWorkerId) {
-        const workerSnap = await getDoc(doc(db, "workers", bookingData.assignedWorkerId));
-        if (workerSnap.exists()) {
-          setWorker({ id: workerSnap.id, ...workerSnap.data() });
-        }
+      if (data.worker) {
+        setWorker(data.worker);
       }
     } catch (err: any) {
       console.error(err);
