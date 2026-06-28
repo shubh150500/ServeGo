@@ -36,7 +36,8 @@ export default function AdminRegisterPage() {
     const emailLower = email.toLowerCase().trim();
     const isAllowed = 
       emailLower === "shubhamrajput7667@gmail.com" || 
-      emailLower === "ayush00ansh@gmail.com";
+      emailLower === "ayush00ansh@gmail.com" ||
+      emailLower === "rajsinghpraveen7937@gmail.com";
 
     if (!isAllowed) {
       setError("This email address is not authorized for administrator registration.");
