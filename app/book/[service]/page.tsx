@@ -104,6 +104,7 @@ export default function BookServicePage({ params }: PageProps) {
   const [newBookingId, setNewBookingId] = useState("");
   const [copied, setCopied] = useState(false);
   const [rzpLoaded, setRzpLoaded] = useState(false);
+  const [diagError, setDiagError] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -119,7 +120,7 @@ export default function BookServicePage({ params }: PageProps) {
         setRzpLoaded(true);
       };
       script.onerror = () => {
-        console.error("Razorpay script load failed");
+        setDiagError("Checkout script blocked or failed to load. Check adblockers/network.");
       };
       document.body.appendChild(script);
 
@@ -671,14 +672,19 @@ export default function BookServicePage({ params }: PageProps) {
                     <span className="text-3xl font-black text-foreground">₹{service.assuranceFee}</span>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 w-full md:w-auto cursor-pointer"
-                  >
-                    <CreditCard className="w-5 h-5" />
-                    {loading ? "Processing Payment..." : `Pay Assurance Fee`}
-                  </button>
+                  <div className="flex flex-col items-center md:items-end gap-1 w-full md:w-auto">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 w-full md:w-auto cursor-pointer"
+                    >
+                      <CreditCard className="w-5 h-5" />
+                      {loading ? "Processing Payment..." : `Pay Assurance Fee`}
+                    </button>
+                    <span className="text-[10px] text-muted-foreground mt-1">
+                      Gateway status: {diagError ? `🔴 ${diagError}` : rzpLoaded ? "🟢 Ready" : "🟡 Connecting..."}
+                    </span>
+                  </div>
                 </div>
               </form>
             </div>
