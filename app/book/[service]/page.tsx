@@ -681,9 +681,6 @@ export default function BookServicePage({ params }: PageProps) {
                       <CreditCard className="w-5 h-5" />
                       {loading ? "Processing Payment..." : `Pay Assurance Fee`}
                     </button>
-                    <span className="text-[10px] text-muted-foreground mt-1">
-                      Gateway status: {diagError ? `🔴 ${diagError}` : rzpLoaded ? "🟢 Ready" : "🟡 Connecting..."}
-                    </span>
                   </div>
                 </div>
               </form>
