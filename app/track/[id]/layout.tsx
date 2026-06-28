@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      url: `https://servego.shop/track/${unwrapped.id}`,
+      url: `https://servego.co.in/track/${unwrapped.id}`,
       siteName: "ServeGo",
       locale: "en_IN",
       type: "website",

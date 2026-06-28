@@ -197,8 +197,8 @@ export default function Home() {
               "@context": "https://schema.org",
               "@type": "Organization",
               "name": "ServeGo",
-              "url": "https://servego.shop",
-              "logo": "https://servego.shop/logo.png",
+              "url": "https://servego.co.in",
+              "logo": "https://servego.co.in/logo.png",
               "contactPoint": {
                 "@type": "ContactPoint",
                 "email": "servegoofficial@gmail.com",
@@ -209,8 +209,8 @@ export default function Home() {
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
               "name": "ServeGo Local Services",
-              "image": "https://servego.shop/logo.png",
-              "url": "https://servego.shop",
+              "image": "https://servego.co.in/logo.png",
+              "url": "https://servego.co.in",
               "email": "servegoofficial@gmail.com",
               "priceRange": "$$",
               "address": {

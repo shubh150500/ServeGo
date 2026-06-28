@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
         <section className="mb-8">
           <h2 className="text-2xl font-bold mb-3">1. Introduction</h2>
           <p className="text-muted-foreground">
-            ServeGo ("we", "us", "our") operates the website https://servego.shop ("Site"). This Privacy Policy explains how we collect, use, store, and disclose your personal information when you use our services. We are committed to protecting your privacy in accordance with the applicable Indian laws, including the Information Technology Act, 2000 and related rules.
+            ServeGo ("we", "us", "our") operates the website https://servego.co.in ("Site"). This Privacy Policy explains how we collect, use, store, and disclose your personal information when you use our services. We are committed to protecting your privacy in accordance with the applicable Indian laws, including the Information Technology Act, 2000 and related rules.
           </p>
         </section>
         <section className="mb-8">
