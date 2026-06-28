@@ -103,6 +103,25 @@ export default function BookServicePage({ params }: PageProps) {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [newBookingId, setNewBookingId] = useState("");
   const [copied, setCopied] = useState(false);
+  const [rzpLoaded, setRzpLoaded] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ((window as any).Razorpay) {
+        setRzpLoaded(true);
+        return;
+      }
+      
+      const interval = setInterval(() => {
+        if ((window as any).Razorpay) {
+          setRzpLoaded(true);
+          clearInterval(interval);
+        }
+      }, 500);
+
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   // Interest registration form state
   const [interestName, setInterestName] = useState("");
@@ -272,20 +291,6 @@ export default function BookServicePage({ params }: PageProps) {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   };
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if ((window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -303,10 +308,9 @@ export default function BookServicePage({ params }: PageProps) {
     setLoading(true);
 
     try {
-      // Ensure Razorpay SDK script is fully loaded
-      const isScriptLoaded = await loadRazorpayScript();
-      if (!isScriptLoaded) {
-        throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
+      // Ensure Razorpay SDK is loaded on the window
+      if (!(window as any).Razorpay && !rzpLoaded) {
+        throw new Error("Razorpay payment gateway is still loading. Please wait a few seconds and try again.");
       }
 
       // 1. Create order on the serverless API
@@ -447,7 +451,11 @@ export default function BookServicePage({ params }: PageProps) {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       
       {/* Load Razorpay script */}
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+      <Script 
+        src="https://checkout.razorpay.com/v1/checkout.js" 
+        strategy="afterInteractive" 
+        onLoad={() => setRzpLoaded(true)}
+      />
 
       <header className="border-b border-border/60 py-6 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
