@@ -112,14 +112,22 @@ export default function BookServicePage({ params }: PageProps) {
         return;
       }
       
-      const interval = setInterval(() => {
-        if ((window as any).Razorpay) {
-          setRzpLoaded(true);
-          clearInterval(interval);
-        }
-      }, 500);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => {
+        setRzpLoaded(true);
+      };
+      script.onerror = () => {
+        console.error("Razorpay script load failed");
+      };
+      document.body.appendChild(script);
 
-      return () => clearInterval(interval);
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
     }
   }, []);
 
@@ -309,20 +317,8 @@ export default function BookServicePage({ params }: PageProps) {
 
     try {
       // Ensure Razorpay SDK is loaded on the window, with a forceful fallback injector
-      if (!(window as any).Razorpay) {
-        await new Promise((resolve) => {
-          const script = document.createElement("script");
-          script.src = "https://checkout.razorpay.com/v1/checkout.js";
-          script.onload = () => resolve(true);
-          script.onerror = () => resolve(false);
-          document.body.appendChild(script);
-          // Wait up to 3 seconds
-          setTimeout(() => resolve(false), 3000);
-        });
-      }
-
-      if (!(window as any).Razorpay) {
-        throw new Error("Razorpay payment gateway failed to load. Please disable any AdBlocker (like Brave Shield) or check your internet connection.");
+      if (!(window as any).Razorpay && !rzpLoaded) {
+        throw new Error("Razorpay payment gateway is still loading. Please wait a moment and try again.");
       }
 
       // 1. Create order on the serverless API
@@ -462,12 +458,6 @@ export default function BookServicePage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       
-      {/* Load Razorpay script */}
-      <Script 
-        src="https://checkout.razorpay.com/v1/checkout.js" 
-        strategy="afterInteractive" 
-        onLoad={() => setRzpLoaded(true)}
-      />
 
       <header className="border-b border-border/60 py-6 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
