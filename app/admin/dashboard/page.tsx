@@ -1037,6 +1037,18 @@ export default function AdminDashboardPage() {
     return `https://wa.me/${lead.customerMobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
   };
 
+  // WhatsApp link generator to send worker completion proof upload page
+  const generateWorkerCompletionWhatsAppLink = (lead: any, worker: any) => {
+    const text = `Hello ${worker.name}! Please upload the work completion proof (photos) for your ${getServiceName(lead.serviceType)} job at ${lead.customerArea} here:\nhttps://servego.co.in/worker/job/${lead.id}/complete?token=${lead.securityToken}`;
+    return `https://wa.me/${worker.mobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
+  };
+
+  // WhatsApp link generator to send customer feedback review page
+  const generateCustomerReviewWhatsAppLink = (lead: any) => {
+    const text = `Hello ${lead.customerName}! Your service request for ${getServiceName(lead.serviceType)} has been completed. Please rate your experience and provide your valuable feedback here:\nhttps://servego.co.in/review/${lead.id}`;
+    return `https://wa.me/${lead.customerMobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1579,6 +1591,32 @@ export default function AdminDashboardPage() {
                                           className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold text-xs rounded-lg transition-colors ml-2"
                                         >
                                           Notify Customer
+                                        </a>
+                                      )}
+                                      
+                                      {/* WhatsApp to Worker: Request Proof */}
+                                      {lead.status === "ACCEPTED" && assignedWorker && (
+                                        <a
+                                          href={generateWorkerCompletionWhatsAppLink(lead, assignedWorker)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors"
+                                          title="Send Job Completion Upload Link to Worker"
+                                        >
+                                          <MessageSquare className="w-3.5 h-3.5" /> Request Proof
+                                        </a>
+                                      )}
+
+                                      {/* WhatsApp to Customer: Request Review */}
+                                      {lead.status === "COMPLETED" && (
+                                        <a
+                                          href={generateCustomerReviewWhatsAppLink(lead)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-lg transition-colors ml-2"
+                                          title="Send Feedback Review Link to Customer"
+                                        >
+                                          <MessageSquare className="w-3.5 h-3.5" /> Request Review
                                         </a>
                                       )}
 

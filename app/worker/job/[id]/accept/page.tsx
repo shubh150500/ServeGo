@@ -78,7 +78,7 @@ export default function WorkerAcceptJobPage({ params }: PageProps) {
       }
     } catch (err: any) {
       console.error(err);
-      setError("Error synchronizing with platform. Please try again.");
+      setError(`Error synchronizing with platform (${err.message || err}). Please try again.`);
     } finally {
       setLoading(false);
     }
