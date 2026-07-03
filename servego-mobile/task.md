@@ -1,0 +1,9 @@
+- `[x]` 1. Setup Expo Mobile Project Configs
+  - `[x]` Write package.json with Expo dependencies
+  - `[x]` Write app.json metadata bundle config
+  - `[x]` Write babel.config.js transpiler presets
+- `[x]` 2. Implement Native WebView Wrapper
+  - `[x]` Add App.js code with SafeArea, StatusBar, and Spinner indicators
+  - `[x]` Add Android hardware back-button listener hooks
+- `[x]` 3. Install Mobile Project Dependencies
+  - `[x]` Run npm install inside servego-mobile folder
