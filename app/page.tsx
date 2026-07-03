@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import DotGlobeHeroDemo from "@/components/ui/demo";
 import { SERVICES_LIST } from "@/lib/services";
 import ServiceIcon from "@/components/ServiceIcon";
+import ThemeToggle from "@/components/ThemeToggle";
 import { collection, addDoc, serverTimestamp, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { 
@@ -21,13 +22,53 @@ import {
   UserCheck,
   Search,
   AlertCircle,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare
 } from "lucide-react";
+
+const TESTIMONIALS = [
+  {
+    name: "Amit Kumar",
+    rating: 5,
+    text: "AC repair work was done professionally. The worker was prompt, negotiated a fair price, and fixed the gas leakage in no time.",
+    service: "AC Repair & Service",
+    area: "Aurangabad"
+  },
+  {
+    name: "Pooja Singh",
+    rating: 5,
+    text: "Excellent plumbing service! The plumber was polite, cleaned the area after finishing, and charging was very reasonable.",
+    service: "Plumbing Services",
+    area: "Sector 4"
+  },
+  {
+    name: "Ramesh Prasad",
+    rating: 4,
+    text: "Booked a carpenter for bed repairs. The quality of work is very high. Direct negotiation made pricing clear and transparent.",
+    service: "Carpentry Services",
+    area: "Aurangabad Town"
+  },
+  {
+    name: "Vikram Sen",
+    rating: 5,
+    text: "Saves a lot of time! Within minutes of scheduling, I got a call back from a verified electrician. Highly recommended for Aurangabad residents.",
+    service: "Electrical Services",
+    area: "Maharajganj"
+  }
+];
 
 export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
+  
+  // Custom states for Testimonials and FAQ
+  const [currentReviewIdx, setCurrentReviewIdx] = useState(0);
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [toggles, setToggles] = useState<any>({
     localPartnerServicesEnabled: false,
@@ -303,17 +344,18 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
-            <span className="text-xl md:text-2xl font-black tracking-tighter text-black">
+            <span className="text-xl md:text-2xl font-black tracking-tighter text-foreground">
               ServeGo
             </span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <button
               onClick={() => setIsSearchOpen(true)}
               className="p-2.5 bg-card/85 hover:bg-card backdrop-blur-xl rounded-full shadow-lg border border-border/40 transition-all cursor-pointer text-foreground hover:scale-105 btn-press"
               aria-label="Search Services"
             >
-              <Search className="w-5 h-5 text-black font-bold" />
+              <Search className="w-5 h-5 text-foreground font-bold" />
             </button>
           </div>
         </div>
@@ -921,8 +963,100 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Testimonials Carousel Section */}
+      <section className="py-24 px-6 max-w-5xl mx-auto scroll-mt-6 border-t border-border/40" id="reviews">
+        <div className="text-center space-y-4 mb-16">
+          <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full flex items-center gap-1.5 justify-center w-fit mx-auto">
+            <MessageSquare className="w-4 h-4" /> Customer Testimonials
+          </span>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight">
+            Loved by Aurangabad Residents
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            See how customers and local professionals coordinate successfully on ServeGo.
+          </p>
+        </div>
+
+        <div className="relative bg-card border border-border/60 p-8 md:p-12 rounded-3xl shadow-xl overflow-hidden max-w-3xl mx-auto flex flex-col items-center">
+          <div className="flex items-center gap-1 mb-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={`w-6 h-6 ${
+                  i < TESTIMONIALS[currentReviewIdx].rating
+                    ? "fill-primary text-primary"
+                    : "text-muted-foreground/30"
+                }`}
+              />
+            ))}
+          </div>
+
+          <motion.div
+            key={currentReviewIdx}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="text-center space-y-6"
+          >
+            <p className="text-lg md:text-xl font-medium leading-relaxed italic text-foreground px-4">
+              "{TESTIMONIALS[currentReviewIdx].text}"
+            </p>
+
+            <div className="space-y-1">
+              <h4 className="font-black text-base text-foreground flex items-center justify-center gap-1.5">
+                {TESTIMONIALS[currentReviewIdx].name}
+                <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Verified User
+                </span>
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                {TESTIMONIALS[currentReviewIdx].service} • {TESTIMONIALS[currentReviewIdx].area}
+              </p>
+            </div>
+          </motion.div>
+
+          <div className="flex items-center gap-4 mt-8 pt-4 border-t border-border/40 w-full justify-center">
+            <button
+              onClick={() =>
+                setCurrentReviewIdx(
+                  (prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length
+                )
+              }
+              className="p-3 bg-secondary text-foreground hover:bg-secondary/80 rounded-full border border-border/40 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+              aria-label="Previous Review"
+            >
+              <ChevronLeft className="w-5 h-5 text-primary" />
+            </button>
+            
+            <div className="flex gap-1.5">
+              {TESTIMONIALS.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentReviewIdx(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                    idx === currentReviewIdx ? "bg-primary w-6" : "bg-muted-foreground/30"
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setCurrentReviewIdx((prev) => (prev + 1) % TESTIMONIALS.length)
+              }
+              className="p-3 bg-secondary text-foreground hover:bg-secondary/80 rounded-full border border-border/40 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+              aria-label="Next Review"
+            >
+              <ChevronRight className="w-5 h-5 text-primary" />
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
-      <section className="py-24 px-6 max-w-4xl mx-auto scroll-mt-6" id="faq">
+      <section className="py-24 px-6 max-w-3xl mx-auto scroll-mt-6" id="faq">
         <div className="text-center space-y-4 mb-16">
           <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full">
             Common Inquiries
@@ -932,33 +1066,52 @@ export default function Home() {
           </h2>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {[
             {
               q: "What is the Service Assurance Fee?",
-              a: "It is a small deposit paid online when scheduling. It covers scheduling verification, background support, and guarantees that a worker turns up for your requested slot. The remaining labor fee is paid directly to the worker."
+              a: "It is a small deposit paid online when scheduling. It covers scheduling verification, background support, and guarantees that a worker turns up for your requested slot. The remaining labor fee is negotiated and paid directly to the worker."
             },
             {
-              q: "How does the worker coordinate?",
-              a: "Once our admin reviews and assigns a worker, the worker receives a secure details link via WhatsApp. They accept the job, review your description, and call you directly to discuss time and final quotes."
+              q: "How does price negotiation work?",
+              a: "ServeGo does not charge commissions or set fixed prices. Once a worker accepts your request, they will contact you directly on WhatsApp or mobile. You can discuss the details of the job and agree on a fair price directly with them."
             },
             {
-              q: "How are workers ranked?",
-              a: "Workers are evaluated on customer ratings, percentage of completed jobs, acceptance rate of leads, and recent activity. Admin prioritizes assigning top-ranked workers."
+              q: "Are the workers verified and safe?",
+              a: "Absolutely. We conduct strict background verifications and check local references for all registered professionals before allowing them to accept bookings. Your safety is our highest priority."
             },
             {
-              q: "Is my payment secure?",
-              a: "Yes, we integrate Razorpay Checkout. All transactions are securely processed and verified serverless before bookings are registered."
+              q: "Is my online assurance fee refundable?",
+              a: "Yes. If no provider is available or if you cancel the service request before a worker starts traveling to your location, the assurance fee is fully refunded to your source payment method."
             }
           ].map((item, idx) => (
-            <div key={idx} className="border border-border/60 p-6 rounded-2xl bg-card">
-              <h3 className="text-lg font-bold flex items-center gap-3">
-                <HelpCircle className="w-5 h-5 text-primary shrink-0" />
-                {item.q}
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed mt-3 pl-8">
-                {item.a}
-              </p>
+            <div key={idx} className="border border-border/60 rounded-2xl bg-card overflow-hidden transition-all duration-300">
+              <button
+                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                type="button"
+                className="w-full text-left p-6 flex items-center justify-between gap-4 font-bold text-foreground text-base md:text-lg hover:text-primary transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-3">
+                  <HelpCircle className="w-5 h-5 text-primary shrink-0" />
+                  {item.q}
+                </span>
+                {activeFaq === idx ? (
+                  <ChevronUp className="w-5 h-5 text-primary shrink-0 transition-transform duration-300" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0 transition-transform duration-300" />
+                )}
+              </button>
+              
+              <motion.div
+                initial={false}
+                animate={{ height: activeFaq === idx ? "auto" : 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="p-6 pt-0 pl-14 text-muted-foreground text-sm leading-relaxed border-t border-border/30">
+                  {item.a}
+                </div>
+              </motion.div>
             </div>
           ))}
         </div>

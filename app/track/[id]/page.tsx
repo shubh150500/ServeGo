@@ -6,6 +6,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { SERVICES_LIST } from "@/lib/services";
 import ServiceIcon from "@/components/ServiceIcon";
+import ThemeToggle from "@/components/ThemeToggle";
 import { 
   ArrowLeft, 
   Clock, 
@@ -17,7 +18,8 @@ import {
   FileText, 
   ExternalLink,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from "lucide-react";
 
 interface PageProps {
@@ -188,11 +190,14 @@ export default function OrderTrackingPage({ params }: PageProps) {
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> Home
           </Link>
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
-            <span className="text-xl font-black tracking-tighter text-black">
-              ServeGo
-            </span>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
+              <span className="text-xl font-black tracking-tighter text-foreground">
+                ServeGo
+              </span>
+            </div>
           </div>
         </div>
 
@@ -335,12 +340,22 @@ export default function OrderTrackingPage({ params }: PageProps) {
                   </div>
                   
                   {booking.status === "ACCEPTED" && (
-                    <a
-                      href={`tel:${worker.mobile}`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer"
-                    >
-                      <Phone className="w-4 h-4" /> Call Partner
-                    </a>
+                    <div className="flex flex-wrap gap-2.5 w-full sm:w-auto">
+                      <a
+                        href={`tel:${worker.mobile}`}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-secondary border border-border/80 hover:bg-secondary/80 text-foreground font-bold rounded-xl text-sm transition-colors cursor-pointer"
+                      >
+                        <Phone className="w-4 h-4 text-primary" /> Call Partner
+                      </a>
+                      <a
+                        href={`https://wa.me/91${worker.mobile.replace(/\s+/g, "")}?text=Hi%20${encodeURIComponent(worker.name)},%20I%20am%20${encodeURIComponent(booking.customerName)}.%20We%20are%20connected%20via%20ServeGo%20for%20the%20${encodeURIComponent(serviceDetails?.name || "service")}%20request%20(ID:%20${booking.id.substring(0, 5)}).`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4" /> WhatsApp Chat
+                      </a>
+                    </div>
                   )}
                 </div>
               </div>

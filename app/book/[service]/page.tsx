@@ -4,8 +4,10 @@ import React, { useState, use, useEffect } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { SERVICES_LIST } from "@/lib/services";
 import ServiceIcon from "@/components/ServiceIcon";
+import ThemeToggle from "@/components/ThemeToggle";
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ArrowLeft, CreditCard, ShieldCheck, AlertCircle, CheckCircle, Copy, Check } from "lucide-react";
@@ -97,6 +99,21 @@ export default function BookServicePage({ params }: PageProps) {
   const [area, setArea] = useState("");
   const [description, setDescription] = useState("");
   
+  // Wizard & Promo state enhancements
+  const [step, setStep] = useState(1);
+  const [bookingDate, setBookingDate] = useState(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
+  const [bookingTimeSlot, setBookingTimeSlot] = useState("Morning (9 AM - 12 PM)");
+  const [promoCode, setPromoCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponError, setCouponError] = useState("");
+
   // App UI State
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -197,16 +214,19 @@ export default function BookServicePage({ params }: PageProps) {
   if (isGated) {
     return (
       <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20">
-        <header className="border-b border-border/60 py-6 px-6">
+        <header className="border-b border-border/60 py-4 px-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" /> Back to Home
             </Link>
-            <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
-              <span className="text-xl font-black tracking-tighter text-black">
-                ServeGo
-              </span>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
+                <span className="text-xl font-black tracking-tighter text-foreground">
+                  ServeGo
+                </span>
+              </div>
             </div>
           </div>
         </header>
@@ -323,13 +343,14 @@ export default function BookServicePage({ params }: PageProps) {
       }
 
       // 1. Create order on the serverless API
+      const payableAmount = Math.max(1, service.assuranceFee - discount);
       const orderResponse = await fetch("/api/razorpay", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: service.assuranceFee,
+          amount: payableAmount,
           serviceId: service.id,
         }),
       });
@@ -385,6 +406,10 @@ export default function BookServicePage({ params }: PageProps) {
               customerArea: area.toLowerCase().trim(),
               serviceType: service.id,
               description: description,
+              bookingDate: bookingDate,
+              bookingTimeSlot: bookingTimeSlot,
+              appliedPromoCode: promoCode || "",
+              appliedDiscountAmount: discount,
               status: "NEW",
               securityToken: secureToken,
               assuranceFeePaid: true,
@@ -407,7 +432,7 @@ export default function BookServicePage({ params }: PageProps) {
               bookingId: bookingRef.id,
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
-              amount: service.assuranceFee,
+              amount: payableAmount,
               customerId: "", // guest checkout
               status: "captured",
               createdAt: serverTimestamp(),
@@ -460,16 +485,19 @@ export default function BookServicePage({ params }: PageProps) {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       
 
-      <header className="border-b border-border/60 py-6 px-6">
+      <header className="border-b border-border/60 py-4 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href={`/services/${service.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to Service
           </Link>
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
-            <span className="text-xl font-black tracking-tighter text-black">
-              ServeGo
-            </span>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
+              <span className="text-xl font-black tracking-tighter text-foreground">
+                ServeGo
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -595,7 +623,23 @@ export default function BookServicePage({ params }: PageProps) {
               </div>
             )}
 
-            <div className="bg-card border border-border/80 p-8 rounded-3xl shadow-lg space-y-6">
+            {/* Booking Wizard Steps Progress Bar */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                <span className={step >= 1 ? "text-primary font-black" : ""}>1. Details</span>
+                <span className={step >= 2 ? "text-primary font-black" : ""}>2. Schedule</span>
+                <span className={step >= 3 ? "text-primary font-black" : ""}>3. Contact</span>
+                <span className={step >= 4 ? "text-primary font-black" : ""}>4. Confirm</span>
+              </div>
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-500 ease-out" 
+                  style={{ width: `${(step / 4) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-card border border-border/80 p-6 md:p-8 rounded-3xl shadow-lg space-y-6">
               {error && (
                 <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl flex items-center gap-3 text-sm font-medium">
                   <AlertCircle className="w-5 h-5 shrink-0" />
@@ -603,87 +647,358 @@ export default function BookServicePage({ params }: PageProps) {
                 </div>
               )}
 
-              <form onSubmit={handleBookingSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Amit Sharma"
-                      className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">WhatsApp Contact Number</label>
-                    <input
-                      type="tel"
-                      required
-                      value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
-                      placeholder="e.g. 9876543210"
-                      className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
-                    />
-                  </div>
-                </div>
+              <AnimatePresence mode="wait">
+                {step === 1 && (
+                  <motion.div
+                    key="step1"
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-6"
+                  >
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/80">Description of Work / Issue</label>
+                      <textarea
+                        required
+                        rows={5}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Describe what needs to be fixed or installed in detail (e.g. 3 ceiling fans replacement and check light switch box)"
+                        className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm resize-none"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Please write in detail so the assigned worker can understand your requirements easily.</p>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Complete Address</label>
-                    <input
-                      type="text"
-                      required
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Flat, building name, street address"
-                      className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Area / City Sector</label>
-                    <input
-                      type="text"
-                      required
-                      value={area}
-                      onChange={(e) => setArea(e.target.value)}
-                      placeholder="e.g. Sector 62"
-                      className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
-                    />
-                  </div>
-                </div>
+                    <div className="pt-4 border-t border-border/40 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!description.trim()) {
+                            setError("Please enter a description of the work needed.");
+                            return;
+                          }
+                          setError("");
+                          setStep(2);
+                        }}
+                        className="px-6 py-3 bg-primary text-primary-foreground font-bold text-sm rounded-xl hover:bg-primary/95 shadow-md cursor-pointer"
+                      >
+                        Next: Choose Schedule
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-foreground/80">Description of Work / Issue</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe what needs to be fixed or installed in detail (e.g. 3 ceiling fans replacement and check light switch box)"
-                    className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm resize-none"
-                  />
-                </div>
+                {step === 2 && (
+                  <motion.div
+                    key="step2"
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-6"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-foreground/80">Preferred Service Date</label>
+                        <input
+                          type="date"
+                          required
+                          value={bookingDate}
+                          min={(() => {
+                            const today = new Date();
+                            const yyyy = today.getFullYear();
+                            const mm = String(today.getMonth() + 1).padStart(2, '0');
+                            const dd = String(today.getDate()).padStart(2, '0');
+                            return `${yyyy}-${mm}-${dd}`;
+                          })()}
+                          onChange={(e) => setBookingDate(e.target.value)}
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
+                        />
+                      </div>
 
-                <div className="border-t border-border/60 pt-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="space-y-1 text-center md:text-left">
-                    <span className="text-sm font-semibold text-muted-foreground block">Payable Assurance Fee</span>
-                    <span className="text-3xl font-black text-foreground">₹{service.assuranceFee}</span>
-                  </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-foreground/80">Select Preferred Time Slot</label>
+                        <div className="grid grid-cols-1 gap-2.5">
+                          {[
+                            "Morning (9 AM - 12 PM)",
+                            "Afternoon (12 PM - 3 PM)",
+                            "Evening (3 PM - 6 PM)",
+                            "Night (6 PM - 9 PM)"
+                          ].map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setBookingTimeSlot(slot)}
+                              className={`w-full px-4 py-3 text-left rounded-xl border text-sm font-semibold transition-all flex justify-between items-center ${
+                                bookingTimeSlot === slot
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border/80 hover:bg-muted text-foreground"
+                              }`}
+                            >
+                              <span>{slot}</span>
+                              {bookingTimeSlot === slot && <span className="text-xs">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="flex flex-col items-center md:items-end gap-1 w-full md:w-auto">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 w-full md:w-auto cursor-pointer"
-                    >
-                      <CreditCard className="w-5 h-5" />
-                      {loading ? "Processing Payment..." : `Pay Assurance Fee`}
-                    </button>
-                  </div>
-                </div>
-              </form>
+                    <div className="pt-4 border-t border-border/40 flex justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setStep(1)}
+                        className="px-6 py-3 border border-border hover:bg-muted text-foreground font-bold text-sm rounded-xl cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!bookingDate) {
+                            setError("Please pick a preferred date.");
+                            return;
+                          }
+                          setError("");
+                          setStep(3);
+                        }}
+                        className="px-6 py-3 bg-primary text-primary-foreground font-bold text-sm rounded-xl hover:bg-primary/95 shadow-md cursor-pointer"
+                      >
+                        Next: Contact Details
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 3 && (
+                  <motion.div
+                    key="step3"
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-6"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-foreground/80">Full Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="e.g. Amit Sharma"
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-foreground/80">WhatsApp Contact Number</label>
+                        <input
+                          type="tel"
+                          required
+                          value={mobile}
+                          onChange={(e) => setMobile(e.target.value)}
+                          placeholder="e.g. 9876543210"
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-sm font-bold text-foreground/80">Complete Address</label>
+                        <input
+                          type="text"
+                          required
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="Flat, building name, street address"
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-foreground/80">Area / City Sector</label>
+                        <input
+                          type="text"
+                          required
+                          value={area}
+                          onChange={(e) => setArea(e.target.value)}
+                          placeholder="e.g. Sector 62"
+                          className="w-full px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-border/40 flex justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="px-6 py-3 border border-border hover:bg-muted text-foreground font-bold text-sm rounded-xl cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!name.trim() || !mobile.trim() || !address.trim() || !area.trim()) {
+                            setError("Please fill out all contact fields.");
+                            return;
+                          }
+                          if (mobile.length !== 10) {
+                            setError("Please enter a valid 10-digit mobile number.");
+                            return;
+                          }
+                          setError("");
+                          setStep(4);
+                        }}
+                        className="px-6 py-3 bg-primary text-primary-foreground font-bold text-sm rounded-xl hover:bg-primary/95 shadow-md cursor-pointer"
+                      >
+                        Next: Review & Confirm
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 4 && (
+                  <motion.div
+                    key="step4"
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-6"
+                  >
+                    {/* Booking Review Summary Card */}
+                    <div className="bg-muted/40 border border-border/60 p-5 rounded-2xl space-y-4 text-sm">
+                      <h4 className="font-black text-foreground uppercase tracking-wider text-xs">Booking Summary</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Customer Name</span>
+                          <span className="font-semibold text-foreground">{name}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground block">WhatsApp Number</span>
+                          <span className="font-semibold text-foreground">{mobile}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Scheduled Date</span>
+                          <span className="font-semibold text-foreground">{bookingDate}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Preferred Time</span>
+                          <span className="font-semibold text-foreground">{bookingTimeSlot}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-xs text-muted-foreground block">Service Location</span>
+                          <span className="font-semibold text-foreground">{address}, {area}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Promo Code Fields */}
+                    <div className="space-y-2 border-t border-border/40 pt-5">
+                      <label className="text-xs font-bold text-foreground/80 block">Apply Coupon / Promo Code</label>
+                      <div className="flex gap-2.5">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value)}
+                          placeholder="e.g. FIRST50, FESTIVE10"
+                          disabled={couponApplied}
+                          className="flex-1 px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm uppercase font-mono font-bold"
+                        />
+                        {couponApplied ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDiscount(0);
+                              setPromoCode("");
+                              setCouponApplied(false);
+                            }}
+                            className="px-4 py-3 border border-border hover:bg-muted text-sm font-bold text-destructive rounded-xl cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCouponError("");
+                              const code = promoCode.trim().toUpperCase();
+                              if (code === "FIRST50") {
+                                setDiscount(Math.floor(service.assuranceFee * 0.5));
+                                setCouponApplied(true);
+                              } else if (code === "FESTIVE10") {
+                                setDiscount(Math.floor(service.assuranceFee * 0.1));
+                                setCouponApplied(true);
+                              } else if (code === "") {
+                                setCouponError("Please type a promo code first.");
+                              } else {
+                                setCouponError("Invalid coupon code");
+                                setDiscount(0);
+                                setCouponApplied(false);
+                              }
+                            }}
+                            className="px-5 py-3 bg-secondary text-primary border border-border/60 hover:bg-secondary/80 text-sm font-bold rounded-xl cursor-pointer"
+                          >
+                            Apply
+                          </button>
+                        )}
+                      </div>
+                      
+                      {couponApplied && (
+                        <p className="text-xs text-emerald-500 font-semibold">✓ Coupon applied successfully! Discount of ₹{discount} is applied.</p>
+                      )}
+                      {couponError && (
+                        <p className="text-xs text-destructive font-semibold">⚠ {couponError}</p>
+                      )}
+                      
+                      <div className="bg-primary/5 p-3.5 rounded-xl border border-primary/20 flex justify-between text-xs mt-2 text-muted-foreground">
+                        <span>Try code <span className="font-mono font-bold text-primary">FIRST50</span> to get 50% discount!</span>
+                      </div>
+                    </div>
+
+                    {/* Cost Breakdown & Pay Button */}
+                    <form onSubmit={handleBookingSubmit} className="space-y-6 border-t border-border/40 pt-5">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Assurance Fee</span>
+                          <span>₹{service.assuranceFee}</span>
+                        </div>
+                        {discount > 0 && (
+                          <div className="flex justify-between text-sm text-emerald-500 font-semibold">
+                            <span>Coupon Discount</span>
+                            <span>-₹{discount}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-end pt-2 border-t border-border/30">
+                          <span className="text-sm font-semibold text-muted-foreground block">Payable Assurance Fee</span>
+                          <strong className="text-3xl font-black text-foreground">₹{Math.max(1, service.assuranceFee - discount)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setStep(3)}
+                          className="px-6 py-4 border border-border hover:bg-muted text-foreground font-bold text-sm rounded-xl cursor-pointer"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="flex-1 group inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 cursor-pointer"
+                        >
+                          <CreditCard className="w-5 h-5" />
+                          {loading ? "Processing Payment..." : `Pay Assurance Fee`}
+                        </button>
+                      </div>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="flex items-center gap-2 justify-center text-xs text-muted-foreground">
