@@ -1,0 +1,9 @@
+/* TEAM */
+ServeGo Operations Team
+Email: servegoofficial@gmail.com
+Location: Aurangabad, Bihar, India
+
+/* SITE */
+Standards: HTML5, CSS3, ESNext, Next.js, React, TailwindCSS, Firebase
+Components: Lucide Icons, Framer Motion
+Target: Modern mobile and desktop browsers

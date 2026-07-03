@@ -27,6 +27,8 @@ import {
 export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [toggles, setToggles] = useState<any>({
     localPartnerServicesEnabled: false,
     vehicleRentalEnabled: false
@@ -49,9 +51,11 @@ export default function Home() {
         if (!snap.empty) {
           setServices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }
+        setLoadingServices(false);
       },
       (err) => {
         console.error("Firestore services subscription failed:", err);
+        setLoadingServices(false);
       }
     );
 
@@ -67,9 +71,16 @@ export default function Home() {
       }
     );
 
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
     return () => {
       unsub();
       unsubToggles();
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -199,31 +210,96 @@ export default function Home() {
               "name": "ServeGo",
               "url": "https://servego.co.in",
               "logo": "https://servego.co.in/logo.png",
+              "sameAs": [
+                "https://servego.co.in"
+              ],
               "contactPoint": {
                 "@type": "ContactPoint",
                 "email": "servegoofficial@gmail.com",
-                "contactType": "customer service"
+                "contactType": "customer service",
+                "areaServed": "IN",
+                "availableLanguage": ["English", "Hindi"]
               }
             },
             {
               "@context": "https://schema.org",
-              "@type": "LocalBusiness",
+              "@type": "HomeAndConstructionBusiness",
               "name": "ServeGo Local Services",
               "image": "https://servego.co.in/logo.png",
+              "@id": "https://servego.co.in/#localbusiness",
               "url": "https://servego.co.in",
               "email": "servegoofficial@gmail.com",
-              "priceRange": "$$",
+              "priceRange": "₹₹",
               "address": {
                 "@type": "PostalAddress",
+                "streetAddress": "Aurangabad",
+                "addressLocality": "Aurangabad",
+                "addressRegion": "Bihar",
+                "postalCode": "824101",
                 "addressCountry": "IN"
+              },
+              "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 24.7539,
+                "longitude": 84.3739
+              },
+              "areaServed": [
+                {
+                  "@type": "AdministrativeArea",
+                  "name": "Aurangabad, Bihar"
+                }
+              ]
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "ServeGo",
+              "url": "https://servego.co.in",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://servego.co.in/?search={search_term_string}",
+                "query-input": "required name=search_term_string"
               }
-            }
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": "https://servego.co.in"
+                }
+              ]
+            },
+            ...SERVICES_LIST.map((s) => ({
+              "@context": "https://schema.org",
+              "@type": "Service",
+              "name": s.name,
+              "description": s.shortDescription,
+              "provider": {
+                "@type": "LocalBusiness",
+                "name": "ServeGo",
+                "image": "https://servego.co.in/logo.png"
+              },
+              "areaServed": {
+                "@type": "AdministrativeArea",
+                "name": "Aurangabad, Bihar"
+              },
+              "offers": {
+                "@type": "Offer",
+                "price": s.assuranceFee,
+                "priceCurrency": "INR",
+                "description": "Assurance Fee"
+              }
+            }))
           ])
         }}
       />
       
-      {/* Absolute Header Navigation */}
-      <header className="absolute top-0 left-0 right-0 z-30 w-full py-6 px-6">
+      {/* Sticky Header Navigation */}
+      <header className={`fixed top-0 left-0 right-0 z-30 w-full transition-all duration-300 ${isScrolled ? "glass-nav py-4 px-6 shadow-md" : "absolute bg-transparent py-6 px-6"}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />
@@ -234,7 +310,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2.5 bg-card/85 hover:bg-card backdrop-blur-xl rounded-full shadow-lg border border-border/40 transition-all cursor-pointer text-foreground hover:scale-105"
+              className="p-2.5 bg-card/85 hover:bg-card backdrop-blur-xl rounded-full shadow-lg border border-border/40 transition-all cursor-pointer text-foreground hover:scale-105 btn-press"
               aria-label="Search Services"
             >
               <Search className="w-5 h-5 text-black font-bold" />
@@ -449,51 +525,46 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {(services.length > 0 ? services : SERVICES_LIST).filter((s) => s.type === "home" || !s.type).map((service, idx) => (
-            <motion.div
-              key={service.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.05, duration: 0.5 }}
-              whileHover={{ y: -6, transition: { duration: 0.2 } }}
-              className="service-card bg-card hover:bg-accent/5 border border-border/60 hover:border-primary/40 p-6 md:p-8 rounded-2xl shadow-sm transition-all duration-300 flex flex-col justify-between"
-            >
-              <div className="space-y-6">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
-                  {service.imageUrl ? (
-                    <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <ServiceIcon name={service.iconName} className="w-7 h-7" />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold tracking-tight">{service.name}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{service.shortDescription}</p>
-                </div>
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+          {loadingServices ? (
+            Array.from({ length: 6 }).map((_, idx) => (
+              <div 
+                key={idx} 
+                className="aspect-square bg-card border border-border/40 rounded-2xl p-4 flex flex-col items-center justify-center space-y-3 relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/30 to-transparent -translate-x-full animate-shimmer" style={{ width: "200%" }} />
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-muted/60 animate-pulse" />
+                <div className="h-4 w-16 bg-muted/70 rounded-md animate-pulse" />
               </div>
-              <div className="mt-8 pt-6 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Assurance Fee: <span className="text-foreground font-bold">₹{service.assuranceFee}</span>
-                </span>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/services/${service.id}`}
-                    className="px-3 py-2 border border-border/80 hover:bg-muted text-xs font-bold rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground"
+            ))
+          ) : (
+            (services.length > 0 ? services : SERVICES_LIST)
+              .filter((s) => s.type === "home" || !s.type)
+              .map((service, idx) => (
+                <Link key={service.id} href={`/services/${service.id}`} className="block group">
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.03, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    whileHover={{ y: -4 }}
+                    whileTap={{ scale: 0.96 }}
+                    className="aspect-square flex flex-col items-center justify-center p-4 md:p-6 bg-card border border-border/60 rounded-2xl shadow-sm group-hover:border-primary/50 group-hover:shadow-md transition-all duration-300 relative overflow-hidden will-change-[transform,opacity]"
                   >
-                    Details
-                  </Link>
-                  <Link
-                    href={`/book/${service.id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-md hover:bg-primary/95 transition-all cursor-pointer"
-                  >
-                    Book Now <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1 will-change-transform">
+                      {service.imageUrl ? (
+                        <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <ServiceIcon name={service.iconName} className="w-6 h-6 md:w-8 md:h-8" />
+                      )}
+                    </div>
+                    <h3 className="text-xs md:text-sm font-bold text-foreground tracking-tight group-hover:text-primary transition-colors duration-200 mt-3 text-center">
+                      {service.name}
+                    </h3>
+                  </motion.div>
+                </Link>
+              ))
+          )}
         </div>
       </section>
       {/* Local Quick Delivery Section */}

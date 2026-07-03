@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>ServeGo Local Services Platform</title>
+  <link>https://servego.co.in</link>
+  <description>Book verified local professionals for plumbing, electrical wiring, home repairs, AC servicing, and appliance repairs in Aurangabad, Bihar.</description>
+  <language>en-in</language>
+  <lastBuildDate>Fri, 03 Jul 2026 00:00:00 GMT</lastBuildDate>
+  <atom:link href="https://servego.co.in/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>ServeGo Launch in Aurangabad Bihar</title>
+    <link>https://servego.co.in</link>
+    <guid>https://servego.co.in/launch</guid>
+    <pubDate>Fri, 03 Jul 2026 00:00:00 GMT</pubDate>
+    <description>Book trusted local home services (plumbers, electricians, carpenters, AC mechanics) with background checks and transparent rates.</description>
+  </item>
+</channel>
+</rss>

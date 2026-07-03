@@ -304,3 +304,40 @@ section p.text-muted-foreground, section p.text-lg {
   filter: blur(100px) !important;
   will-change: transform;
 }
+
+/* Custom animations for premium UX/UI polish */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.8s infinite ease-in-out;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Smooth active press states for buttons */
+.btn-press:active {
+  transform: scale(0.97);
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Glassmorphism utility for sticky navigation blur */
+.glass-nav {
+  backdrop-filter: blur(12px);
+  background-color: rgba(250, 246, 241, 0.85);
+  border-bottom: 1px solid rgba(215, 195, 176, 0.4);
+}
+
+/* Magnetic effect transition helpers */
+.magnetic-card {
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform, box-shadow;
+}

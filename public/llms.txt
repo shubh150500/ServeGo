@@ -1,0 +1,9 @@
+# ServeGo - Local Services Marketplace Platform
+
+ServeGo is a reliable, zero-commission local services marketplace connecting background-verified home service professionals (electricians, plumbers, carpenters, AC repair, cleaning) directly with customers in Aurangabad, Bihar, India.
+
+## Key Links
+- Main Website: https://servego.co.in
+- Services Catalog: https://servego.co.in/#services
+- Tracking Service Order: https://servego.co.in/track
+- Partner Registration: https://servego.co.in/#become-worker
