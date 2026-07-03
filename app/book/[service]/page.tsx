@@ -904,7 +904,7 @@ export default function BookServicePage({ params }: PageProps) {
                           type="text"
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value)}
-                          placeholder="e.g. FIRST50, FESTIVE10"
+                          placeholder="e.g. AUBR50"
                           disabled={couponApplied}
                           className="flex-1 px-4 py-3 bg-muted/40 border border-border/85 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm uppercase font-mono font-bold"
                         />
@@ -926,11 +926,8 @@ export default function BookServicePage({ params }: PageProps) {
                             onClick={() => {
                               setCouponError("");
                               const code = promoCode.trim().toUpperCase();
-                              if (code === "FIRST50") {
+                              if (code === "AUBR50") {
                                 setDiscount(Math.floor(service.assuranceFee * 0.5));
-                                setCouponApplied(true);
-                              } else if (code === "FESTIVE10") {
-                                setDiscount(Math.floor(service.assuranceFee * 0.1));
                                 setCouponApplied(true);
                               } else if (code === "") {
                                 setCouponError("Please type a promo code first.");
@@ -955,7 +952,7 @@ export default function BookServicePage({ params }: PageProps) {
                       )}
                       
                       <div className="bg-primary/5 p-3.5 rounded-xl border border-primary/20 flex justify-between text-xs mt-2 text-muted-foreground">
-                        <span>Try code <span className="font-mono font-bold text-primary">FIRST50</span> to get 50% discount!</span>
+                        <span>Use launch coupon <span className="font-mono font-bold text-primary animate-pulse">AUBR50</span> to get 50% discount!</span>
                       </div>
                     </div>
 

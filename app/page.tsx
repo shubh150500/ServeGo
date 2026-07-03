@@ -339,8 +339,19 @@ export default function Home() {
         }}
       />
       
+      {/* Top Animated Promo Code Strip */}
+      <div className="fixed top-0 left-0 right-0 h-9 z-40 bg-gradient-to-r from-primary via-orange-500 to-primary text-white flex items-center overflow-hidden border-b border-primary/20 shadow-sm">
+        <div className="animate-marquee whitespace-nowrap flex items-center gap-16 select-none font-bold text-[10px] sm:text-xs uppercase tracking-widest text-primary-foreground/95">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <span key={i} className="flex items-center gap-2">
+              🎉 Special Launch Offer: Use Code <strong className="bg-white text-primary px-2.5 py-0.5 rounded-lg shadow-sm font-black mx-1 animate-pulse">AUBR50</strong> for Flat <span className="font-extrabold text-white">50% OFF</span> on Assurance Fees! •
+            </span>
+          ))}
+        </div>
+      </div>
+      
       {/* Sticky Header Navigation */}
-      <header className={`fixed top-0 left-0 right-0 z-30 w-full transition-all duration-300 ${isScrolled ? "glass-nav py-4 px-6 shadow-md" : "absolute bg-transparent py-6 px-6"}`}>
+      <header className={`fixed top-9 left-0 right-0 z-30 w-full transition-all duration-300 ${isScrolled ? "glass-nav py-4 px-6 shadow-md" : "absolute bg-transparent py-6 px-6"}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <img src="/logo.png" alt="ServeGo Logo" className="w-8 h-8 rounded-lg object-contain" />

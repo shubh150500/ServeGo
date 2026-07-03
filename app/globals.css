@@ -341,3 +341,19 @@ html {
   transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   will-change: transform, box-shadow;
 }
+
+.dark .glass-nav {
+  background-color: rgba(28, 24, 22, 0.85);
+  border-bottom: 1px solid rgba(77, 66, 60, 0.4);
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
