@@ -548,14 +548,14 @@ export default function Home() {
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.03, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     whileHover={{ y: -4 }}
-                    whileTap={{ scale: 0.96 }}
-                    className="aspect-square flex flex-col items-center justify-center p-4 md:p-6 bg-card border border-border/60 rounded-2xl shadow-sm group-hover:border-primary/50 group-hover:shadow-md transition-all duration-300 relative overflow-hidden will-change-[transform,opacity]"
+                    whileTap={{ scale: 0.95 }}
+                    className="aspect-square flex flex-col items-center justify-center p-3 md:p-6 bg-card border border-border/60 rounded-2xl shadow-sm group-hover:border-primary/50 group-hover:shadow-md transition-all duration-300 relative overflow-hidden will-change-[transform,opacity] active:bg-primary/5 active:scale-95"
                   >
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1 will-change-transform">
+                    <div className="w-12 h-12 md:w-16 md:h-16 min-w-[48px] min-h-[48px] md:min-w-[64px] md:min-h-[64px] rounded-2xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1 will-change-transform shrink-0 flex-shrink-0 aspect-square">
                       {service.imageUrl ? (
                         <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
                       ) : (
-                        <ServiceIcon name={service.iconName} className="w-6 h-6 md:w-8 md:h-8" />
+                        <ServiceIcon name={service.iconName} className="w-6 h-6 md:w-8 md:h-8 animate-float-slow" />
                       )}
                     </div>
                     <h3 className="text-xs md:text-sm font-bold text-foreground tracking-tight group-hover:text-primary transition-colors duration-200 mt-3 text-center">

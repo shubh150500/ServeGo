@@ -171,21 +171,21 @@ export default function DotGlobeHeroDemo() {
     >
       <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-background/20 pointer-events-none" />
       
-      {/* Hero background worker image with gradient overlay */}
-      <div className="absolute inset-y-0 right-0 w-full lg:w-3/5 h-full z-0 pointer-events-none select-none opacity-80 overflow-hidden hidden md:block">
+      {/* Hero background worker image with gradient overlay (visible on mobile too!) */}
+      <div className="absolute inset-y-0 right-0 w-full md:w-2/3 lg:w-3/5 h-full z-0 pointer-events-none select-none opacity-35 md:opacity-80 overflow-hidden">
         <img
           src="/workers.png"
           alt="Workers Background"
           loading="lazy"
           className="w-full h-full object-contain object-right"
           style={{
-            maskImage: "linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)",
-            WebkitMaskImage: "linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)",
+            maskImage: "linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage: "linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)",
           }}
         />
-        {/* Soft white/cream gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/45 to-transparent w-full" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent w-full" />
       </div>
+
 
       {/* Enhanced glowing gradients to replicate screenshot aesthetic */}
       <div className="absolute top-[10%] left-[-5%] w-[450px] h-[450px] bg-blue-300/10 rounded-full blur-[120px] pointer-events-none" />
