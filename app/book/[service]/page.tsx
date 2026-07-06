@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SERVICES_LIST } from "@/lib/services";
 import ServiceIcon from "@/components/ServiceIcon";
 import ThemeToggle from "@/components/ThemeToggle";
-import { collection, addDoc, serverTimestamp, doc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ArrowLeft, CreditCard, ShieldCheck, AlertCircle, CheckCircle, Copy, Check } from "lucide-react";
 
@@ -146,6 +146,52 @@ export default function BookServicePage({ params }: PageProps) {
           document.body.removeChild(script);
         }
       };
+    }
+  }, []);
+
+  // Recover from page reloads during mobile UPI app redirect
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const pendingBookingId = localStorage.getItem("pending_booking_id");
+      const pendingOrderId = localStorage.getItem("pending_order_id");
+
+      if (pendingBookingId && pendingOrderId) {
+        setLoading(true);
+        setError("");
+
+        fetch("/api/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "check_order",
+            order_id: pendingOrderId,
+            booking_id: pendingBookingId,
+          }),
+        })
+          .then(async (res) => {
+            const data = await res.json();
+            if (res.ok && data.verified) {
+              localStorage.removeItem("pending_booking_id");
+              localStorage.removeItem("pending_order_id");
+              setNewBookingId(pendingBookingId);
+              setBookingSuccess(true);
+            } else {
+              console.log("Staged checkout check: unpaid or failed.", data.error);
+              localStorage.removeItem("pending_booking_id");
+              localStorage.removeItem("pending_order_id");
+            }
+          })
+          .catch((err) => {
+            console.error("Error during recovery verification:", err);
+            localStorage.removeItem("pending_booking_id");
+            localStorage.removeItem("pending_order_id");
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
     }
   }, []);
 
@@ -363,7 +409,41 @@ export default function BookServicePage({ params }: PageProps) {
 
       const orderId = orderData.id;
 
-      // 2. Open Razorpay Checkout Modal
+      // 2. Create Booking document in Firestore with INITIATED status
+      const secureToken = generateSecurityToken();
+      const bookingDoc: any = {
+        customerName: name,
+        customerMobile: mobile,
+        customerAddress: address,
+        customerArea: area.toLowerCase().trim(),
+        serviceType: service.id,
+        description: description,
+        bookingDate: bookingDate,
+        bookingTimeSlot: bookingTimeSlot,
+        appliedPromoCode: promoCode || "",
+        appliedDiscountAmount: discount,
+        status: "INITIATED",
+        securityToken: secureToken,
+        assuranceFeePaid: false,
+        razorpayOrderId: orderId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      if (partnerId) {
+        bookingDoc.selectedPartnerId = partnerId;
+        bookingDoc.assignedPartnerId = "";
+        bookingDoc.assignedPartnerType = service.type || "";
+      }
+
+      const bookingRef = await addDoc(collection(db, "bookings"), bookingDoc);
+      const createdBookingId = bookingRef.id;
+
+      // Save references in localStorage to recover from page reloads during UPI redirect
+      localStorage.setItem("pending_booking_id", createdBookingId);
+      localStorage.setItem("pending_order_id", orderId);
+
+      // 3. Open Razorpay Checkout Modal
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.amount,
@@ -376,7 +456,7 @@ export default function BookServicePage({ params }: PageProps) {
           try {
             setLoading(true);
 
-            // 3. Verify signature on the serverless API
+            // 4. Verify signature on the serverless API
             const verifyResponse = await fetch("/api/verify", {
               method: "POST",
               headers: {
@@ -395,41 +475,18 @@ export default function BookServicePage({ params }: PageProps) {
               throw new Error(verifyData.error || "Payment signature verification failed");
             }
 
-            // 4. Create Firestore records inside a Transaction/Batch
-            const secureToken = generateSecurityToken();
-
-            // Create Booking document
-            const bookingDoc: any = {
-              customerName: name,
-              customerMobile: mobile,
-              customerAddress: address,
-              customerArea: area.toLowerCase().trim(),
-              serviceType: service.id,
-              description: description,
-              bookingDate: bookingDate,
-              bookingTimeSlot: bookingTimeSlot,
-              appliedPromoCode: promoCode || "",
-              appliedDiscountAmount: discount,
+            // 5. Update existing Booking document
+            const targetBookingRef = doc(db, "bookings", createdBookingId);
+            await updateDoc(targetBookingRef, {
               status: "NEW",
-              securityToken: secureToken,
               assuranceFeePaid: true,
-              razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
-              createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
-            };
-
-            if (partnerId) {
-              bookingDoc.selectedPartnerId = partnerId;
-              bookingDoc.assignedPartnerId = "";
-              bookingDoc.assignedPartnerType = service.type || "";
-            }
-
-            const bookingRef = await addDoc(collection(db, "bookings"), bookingDoc);
+            });
 
             // Create Payment document
             const paymentDoc = {
-              bookingId: bookingRef.id,
+              bookingId: createdBookingId,
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               amount: payableAmount,
@@ -448,8 +505,12 @@ export default function BookServicePage({ params }: PageProps) {
             };
             await addDoc(collection(db, "customers"), customerDoc);
 
+            // Clear pending booking references in localStorage
+            localStorage.removeItem("pending_booking_id");
+            localStorage.removeItem("pending_order_id");
+
             // Show success UI
-            setNewBookingId(bookingRef.id);
+            setNewBookingId(createdBookingId);
             setBookingSuccess(true);
           } catch (err: any) {
             console.error("Payment Verification/DB write error:", err);
