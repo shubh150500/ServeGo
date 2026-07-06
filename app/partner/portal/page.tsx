@@ -46,6 +46,18 @@ const SERVICES_MAP: Record<string, string> = {
   pest: "Pest Control Services"
 };
 
+const getLiveServiceId = (staticId: string): string => {
+  const mapping: Record<string, string> = {
+    "ac-repair": "ac",
+    "ro-repair": "ro",
+    "plumber": "plumbing",
+    "electrician": "electrical",
+    "carpenter": "carpentry",
+    "pest-control": "pest"
+  };
+  return mapping[staticId] || staticId;
+};
+
 export default function PartnerPortalPage() {
   const router = useRouter();
   const [partner, setPartner] = useState<any>(null);
@@ -158,7 +170,7 @@ export default function PartnerPortalPage() {
     const availableQuery = query(
       collection(db, "bookings"),
       where("status", "==", "NEW"),
-      where("serviceType", "==", partner.serviceType)
+      where("serviceType", "==", getLiveServiceId(partner.serviceType))
     );
 
     const unsubAvailable = onSnapshot(availableQuery, (snapshot) => {
