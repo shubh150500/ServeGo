@@ -6,17 +6,7 @@ import Link from "next/link";
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Lock, Phone, ShieldAlert, UserPlus, User, Briefcase, MapPin, CalendarDays } from "lucide-react";
-
-const SERVICE_OPTIONS = [
-  { value: "plumber", label: "Plumber" },
-  { value: "electrician", label: "Electrician" },
-  { value: "carpenter", label: "Carpenter" },
-  { value: "painter", label: "Painter" },
-  { value: "pest-control", label: "Pest Control" },
-  { value: "ac-repair", label: "AC Repair" },
-  { value: "cleaning", label: "Cleaning" },
-  { value: "appliance-repair", label: "Appliance Repair" },
-];
+import { SERVICES_LIST } from "@/lib/services";
 
 export default function PartnerRegisterPage() {
   const router = useRouter();
@@ -29,8 +19,23 @@ export default function PartnerRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [servicesList, setServicesList] = useState<any[]>(SERVICES_LIST);
 
   useEffect(() => {
+    // Load database services config
+    const fetchDbServices = async () => {
+      try {
+        const qSnap = await getDocs(collection(db, "services"));
+        const list = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (list.length > 0) {
+          setServicesList(list);
+        }
+      } catch (err) {
+        console.error("Error loading services config:", err);
+      }
+    };
+    fetchDbServices();
+
     // Inject partner manifest and service worker dynamically
     if (typeof window !== "undefined") {
       const existingLink = document.querySelector('link[rel="manifest"]');
@@ -238,8 +243,8 @@ export default function PartnerRegisterPage() {
                     className="w-full pl-11 pr-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all appearance-none cursor-pointer"
                   >
                     <option value="">Select your service...</option>
-                    {SERVICE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    {servicesList.map(srv => (
+                      <option key={srv.id} value={srv.id}>{srv.name}</option>
                     ))}
                   </select>
                 </div>

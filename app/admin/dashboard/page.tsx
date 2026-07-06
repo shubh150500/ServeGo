@@ -724,7 +724,7 @@ export default function AdminDashboardPage() {
   // Create Worker
   const handleAddWorker = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newWorkerName || !newWorkerMobile || !newWorkerService || !newWorkerArea || !newWorkerExp || !newWorkerEmail || !newWorkerPassword) return;
+    if (!newWorkerName || !newWorkerMobile || !newWorkerService || !newWorkerArea || !newWorkerExp || !newWorkerPassword) return;
 
     try {
       const wDoc = {
@@ -733,7 +733,7 @@ export default function AdminDashboardPage() {
         serviceType: newWorkerService,
         area: newWorkerArea.toLowerCase().trim(),
         experience: parseInt(newWorkerExp, 10) || 1,
-        email: newWorkerEmail.trim().toLowerCase(),
+        email: newWorkerEmail.trim().toLowerCase() || "",
         password: newWorkerPassword,
         rating: 5.0,
         totalReviews: 0,
@@ -766,7 +766,7 @@ export default function AdminDashboardPage() {
   // Edit Worker
   const handleEditWorker = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingWorker || !editWorkerName || !editWorkerMobile || !editWorkerService || !editWorkerArea || !editWorkerExp || !editWorkerEmail || !editWorkerPassword) return;
+    if (!editingWorker || !editWorkerName || !editWorkerMobile || !editWorkerService || !editWorkerArea || !editWorkerExp || !editWorkerPassword) return;
 
     try {
       const workerRef = doc(db, "workers", editingWorker.id);
@@ -776,7 +776,7 @@ export default function AdminDashboardPage() {
         serviceType: editWorkerService,
         area: editWorkerArea.toLowerCase().trim(),
         experience: parseInt(editWorkerExp, 10) || 1,
-        email: editWorkerEmail.trim().toLowerCase(),
+        email: editWorkerEmail.trim().toLowerCase() || "",
         password: editWorkerPassword,
       });
 
@@ -1577,8 +1577,7 @@ export default function AdminDashboardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <input
                             type="email"
-                            required
-                            placeholder="Partner Login Email"
+                            placeholder="Partner Login Email (Optional)"
                             value={newWorkerEmail}
                             onChange={(e) => setNewWorkerEmail(e.target.value)}
                             className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm font-semibold"
@@ -1600,7 +1599,7 @@ export default function AdminDashboardPage() {
                             className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
                           >
                             <option value="">Select Service Category</option>
-                            {SERVICES_LIST.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            {(services.length > 0 ? services : SERVICES_LIST).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                           </select>
                           <input
                             type="text"
@@ -1657,8 +1656,7 @@ export default function AdminDashboardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <input
                             type="email"
-                            required
-                            placeholder="Partner Login Email"
+                            placeholder="Partner Login Email (Optional)"
                             value={editWorkerEmail}
                             onChange={(e) => setEditWorkerEmail(e.target.value)}
                             className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm font-semibold"
@@ -1721,7 +1719,7 @@ export default function AdminDashboardPage() {
                         className="w-full px-3 py-2 bg-background border border-border/80 rounded-xl text-xs"
                       >
                         <option value="ALL">All Categories</option>
-                        {SERVICES_LIST.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        {(services.length > 0 ? services : SERVICES_LIST).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                     </div>
                     <div className="space-y-2">
