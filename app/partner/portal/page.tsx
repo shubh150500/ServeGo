@@ -127,6 +127,7 @@ export default function PartnerPortalPage() {
   const [remarks, setRemarks] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStep, setUploadStep] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   
   // Notification alert state
@@ -428,17 +429,24 @@ export default function PartnerPortalPage() {
     }
 
     setUploading(true);
+    setUploadStep("Compressing image...");
 
     try {
       // 1. Compress image to light JPEG (~200KB) and upload to Firebase Storage
       const compressedBlob = await compressImage(photoFile);
+      
+      setUploadStep("Uploading image to storage...");
       const fileExt = "jpg";
       const fileRef = ref(storage, `completions/${activeLead.id}/${Date.now()}_proof.${fileExt}`);
       
       const uploadResult = await uploadBytes(fileRef, compressedBlob, {
         contentType: "image/jpeg"
       });
+      
+      setUploadStep("Acquiring photo URL...");
       const photoUrl = await getDownloadURL(uploadResult.ref);
+      
+      setUploadStep("Saving status in database...");
 
       // 2. Perform Transaction to update job status to COMPLETED
       const leadRef = doc(db, "bookings", activeLead.id);
@@ -764,7 +772,7 @@ export default function PartnerPortalPage() {
                 {uploading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    <span>Uploading Proof & Finalizing...</span>
+                    <span>{uploadStep || "Uploading..."}</span>
                   </>
                 ) : (
                   <span>Submit Proof & Complete</span>
