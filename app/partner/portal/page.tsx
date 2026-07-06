@@ -178,10 +178,15 @@ export default function PartnerPortalPage() {
     });
 
     // 2. Listen for Available NEW Leads in their Service Category
+    const serviceTypes = Array.from(new Set([
+      partner.serviceType,
+      getLiveServiceId(partner.serviceType)
+    ]));
+
     const availableQuery = query(
       collection(db, "bookings"),
       where("status", "==", "NEW"),
-      where("serviceType", "==", getLiveServiceId(partner.serviceType))
+      where("serviceType", "in", serviceTypes)
     );
 
     const unsubAvailable = onSnapshot(availableQuery, (snapshot) => {
