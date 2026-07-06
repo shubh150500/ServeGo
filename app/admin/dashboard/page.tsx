@@ -1497,9 +1497,9 @@ export default function AdminDashboardPage() {
                                       )}
 
                                       {/* View completion photo */}
-                                      {lead.status === "COMPLETED" && lead.completionPhotoUrl && (
+                                      {lead.status === "COMPLETED" && (lead.completionPhotoUrl || lead.completionPhoto) && (
                                         <a
-                                          href={lead.completionPhotoUrl}
+                                          href={lead.completionPhotoUrl || lead.completionPhoto}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-border/80 text-muted-foreground hover:text-foreground text-xs font-bold rounded-lg transition-all"
