@@ -199,6 +199,8 @@ export default function AdminDashboardPage() {
   const [newWorkerService, setNewWorkerService] = useState("");
   const [newWorkerArea, setNewWorkerArea] = useState("");
   const [newWorkerExp, setNewWorkerExp] = useState("");
+  const [newWorkerEmail, setNewWorkerEmail] = useState("");
+  const [newWorkerPassword, setNewWorkerPassword] = useState("");
 
   // Add Complaint Form State
   const [complaintWorkerId, setComplaintWorkerId] = useState("");
@@ -206,12 +208,14 @@ export default function AdminDashboardPage() {
   const [complaintNotes, setComplaintNotes] = useState("");
 
   // Edit Worker Form State
-  const [editingWorker, setEditingWorker] = useState<WorkerMetrics | null>(null);
+  const [editingWorker, setEditingWorker] = useState<any | null>(null);
   const [editWorkerName, setEditWorkerName] = useState("");
   const [editWorkerMobile, setEditWorkerMobile] = useState("");
   const [editWorkerService, setEditWorkerService] = useState("");
   const [editWorkerArea, setEditWorkerArea] = useState("");
   const [editWorkerExp, setEditWorkerExp] = useState("");
+  const [editWorkerEmail, setEditWorkerEmail] = useState("");
+  const [editWorkerPassword, setEditWorkerPassword] = useState("");
 
   // Filters State
   const [leadStatusFilter, setLeadStatusFilter] = useState("ALL");
@@ -720,7 +724,7 @@ export default function AdminDashboardPage() {
   // Create Worker
   const handleAddWorker = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newWorkerName || !newWorkerMobile || !newWorkerService || !newWorkerArea || !newWorkerExp) return;
+    if (!newWorkerName || !newWorkerMobile || !newWorkerService || !newWorkerArea || !newWorkerExp || !newWorkerEmail || !newWorkerPassword) return;
 
     try {
       const wDoc = {
@@ -729,6 +733,8 @@ export default function AdminDashboardPage() {
         serviceType: newWorkerService,
         area: newWorkerArea.toLowerCase().trim(),
         experience: parseInt(newWorkerExp, 10) || 1,
+        email: newWorkerEmail.trim().toLowerCase(),
+        password: newWorkerPassword,
         rating: 5.0,
         totalReviews: 0,
         totalAssignedJobs: 0,
@@ -749,6 +755,8 @@ export default function AdminDashboardPage() {
       setNewWorkerService("");
       setNewWorkerArea("");
       setNewWorkerExp("");
+      setNewWorkerEmail("");
+      setNewWorkerPassword("");
       fetchData();
     } catch (err) {
       console.error(err);
@@ -758,7 +766,7 @@ export default function AdminDashboardPage() {
   // Edit Worker
   const handleEditWorker = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingWorker || !editWorkerName || !editWorkerMobile || !editWorkerService || !editWorkerArea || !editWorkerExp) return;
+    if (!editingWorker || !editWorkerName || !editWorkerMobile || !editWorkerService || !editWorkerArea || !editWorkerExp || !editWorkerEmail || !editWorkerPassword) return;
 
     try {
       const workerRef = doc(db, "workers", editingWorker.id);
@@ -768,10 +776,14 @@ export default function AdminDashboardPage() {
         serviceType: editWorkerService,
         area: editWorkerArea.toLowerCase().trim(),
         experience: parseInt(editWorkerExp, 10) || 1,
+        email: editWorkerEmail.trim().toLowerCase(),
+        password: editWorkerPassword,
       });
 
       await logAction("EDIT_WORKER", `Updated profile for worker ${editWorkerName} (ID: ${editingWorker.id})`);
       setEditingWorker(null);
+      setEditWorkerEmail("");
+      setEditWorkerPassword("");
       fetchData();
     } catch (err) {
       console.error(err);
@@ -1223,7 +1235,7 @@ export default function AdminDashboardPage() {
                       </h3>
                       <div className="space-y-3">
                         {leads.filter(l => l.status === "NEW" || l.status === "REJECTED").slice(0, 5).map((lead) => (
-                          <div key={lead.id} className="p-4 border border-border/80 rounded-xl flex items-center justify-between gap-4">
+                          <div key={lead.id} className="p-4 border border-border/80 rounded-xl flex items-center justify-between gap-4 bg-muted/10">
                             <div>
                               <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded uppercase">
                                 {getServiceName(lead.serviceType)}
@@ -1231,19 +1243,13 @@ export default function AdminDashboardPage() {
                               <h4 className="font-bold text-sm mt-1">{lead.customerName} - {lead.customerArea}</h4>
                               <p className="text-muted-foreground text-xs">{new Date(lead.createdAt?.seconds * 1000).toLocaleDateString()}</p>
                             </div>
-                            <button
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setActiveTab("leads");
-                              }}
-                              className="px-3 py-1.5 bg-primary text-primary-foreground font-bold text-xs rounded-lg cursor-pointer"
-                            >
-                              Assign
-                            </button>
+                            <span className="text-xs font-bold text-blue-500 bg-blue-500/10 px-2.5 py-1.5 rounded-full uppercase animate-pulse">
+                              Awaiting Partner
+                            </span>
                           </div>
                         ))}
                         {leads.filter(l => l.status === "NEW" || l.status === "REJECTED").length === 0 && (
-                          <p className="text-muted-foreground text-sm text-center py-6">All leads are currently assigned!</p>
+                          <p className="text-muted-foreground text-sm text-center py-6">All leads are currently accepted!</p>
                         )}
                       </div>
                     </div>
@@ -1280,213 +1286,82 @@ export default function AdminDashboardPage() {
               {activeTab === "leads" && (
                 <div className="space-y-6">
                   {selectedLead ? (
-                    /* Assignment Sub-panel */
+                    /* Lead Details Viewer (Read-only) */
                     <div className="bg-card border border-border/80 p-8 rounded-3xl shadow-xl space-y-6">
                       <div className="flex justify-between items-start border-b border-border/60 pb-6">
                         <div>
                           <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded uppercase">
                             {getServiceName(selectedLead.serviceType)}
                           </span>
-                          <h2 className="text-2xl font-black mt-1">Assign Worker to Lead</h2>
+                          <h2 className="text-2xl font-black mt-1">Lead Details</h2>
                           <p className="text-muted-foreground text-sm mt-0.5">Booking ID: {selectedLead.id}</p>
                         </div>
                         <button 
                           onClick={() => setSelectedLead(null)}
                           className="px-4 py-2 border border-border/80 rounded-xl text-sm font-bold hover:bg-muted transition-colors cursor-pointer"
                         >
-                          Cancel
+                          Back to Leads
                         </button>
                       </div>
 
-                      {/* Lead Details */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border border-border/60 text-sm">
-                        <div className="space-y-2">
+                      {/* Lead Details Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/20 p-6 rounded-2xl border border-border/60 text-sm">
+                        <div className="space-y-3">
+                          <h3 className="font-bold text-foreground uppercase tracking-wider text-xs">Customer Information</h3>
                           <p><strong>Customer Name:</strong> {selectedLead.customerName}</p>
                           <p><strong>Contact Mobile:</strong> {selectedLead.customerMobile}</p>
+                          <p><strong>Full Address:</strong> {selectedLead.customerAddress}</p>
                           <p><strong>Service Area:</strong> {selectedLead.customerArea}</p>
                         </div>
-                        <div className="space-y-2">
-                          <p><strong>Full Address:</strong> {selectedLead.customerAddress}</p>
-                          <p><strong>Assurance Fee:</strong> Paid (Verified)</p>
-                          <p><strong>Description:</strong> {selectedLead.description}</p>
+                        <div className="space-y-3">
+                          <h3 className="font-bold text-foreground uppercase tracking-wider text-xs">Booking Specifications</h3>
+                          <p><strong>Assurance Fee:</strong> Paid (₹{selectedLead.appliedDiscountAmount ? selectedLead.amount : selectedLead.amount || "49"})</p>
+                          <p><strong>Scheduled Date:</strong> {selectedLead.bookingDate || "Standard Schedule"}</p>
+                          <p><strong>Preferred Time Slot:</strong> {selectedLead.bookingTimeSlot || "Anytime"}</p>
+                          <p><strong>Status:</strong> 
+                            <span className={`ml-2 px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                              selectedLead.status === "NEW" ? "bg-blue-100 text-blue-800" :
+                              selectedLead.status === "ACCEPTED" ? "bg-purple-100 text-purple-800" :
+                              selectedLead.status === "COMPLETED" ? "bg-emerald-100 text-emerald-800" :
+                              "bg-rose-100 text-rose-800"
+                            }`}>
+                              {selectedLead.status === "NEW" ? "Awaiting Acceptance" : selectedLead.status}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="col-span-1 md:col-span-2 pt-3 border-t border-border/40 space-y-1">
+                          <strong className="text-xs font-bold text-foreground uppercase tracking-wider block">Description of Work / Issue</strong>
+                          <p className="text-muted-foreground whitespace-pre-wrap">{selectedLead.description}</p>
                         </div>
                       </div>
 
-                      {/* Recommendations Engine or Partner Confirmation */}
-                      {(() => {
-                        const currentService = SERVICES_LIST.find((s) => s.id === selectedLead.serviceType);
-                        if (currentService?.type === "partner") {
-                          const selectedShop = shops.find((s) => s.id === selectedLead.selectedPartnerId);
-                          const categoryShops = shops.filter((s) => s.category === selectedLead.serviceType && s.status === "active");
-
-                          return (
-                            <div className="space-y-6">
-                              {/* Selected Shop Section */}
-                              <div className="space-y-4">
-                                <h3 className="text-lg font-black flex items-center gap-2">
-                                  🏪 Customer's Selected Shop
-                                </h3>
-                                {selectedShop ? (
-                                  <div className="p-6 border border-primary/30 bg-primary/5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div>
-                                      <h4 className="font-bold text-xl">{selectedShop.name}</h4>
-                                      <p className="text-xs text-muted-foreground mt-1">Owner: {selectedShop.ownerName} | Contact: {selectedShop.phone}</p>
-                                      <p className="text-xs text-muted-foreground">Area: {selectedShop.area} | Hours: {selectedShop.openingTime} - {selectedShop.closingTime}</p>
-                                    </div>
-                                    <button
-                                      onClick={() => handleAssignPartner(selectedLead.id, selectedShop.id, selectedShop.name, "shop")}
-                                      className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-sm shadow hover:shadow-primary/30 transition-all cursor-pointer shrink-0"
-                                    >
-                                      Confirm & Assign Shop
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="p-5 border border-dashed border-border/80 rounded-2xl text-center text-muted-foreground text-sm">
-                                    No specific shop selected by the customer.
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Alternative Shops List */}
-                              <div className="space-y-4 border-t border-border/60 pt-6">
-                                <h3 className="text-base font-bold text-foreground">
-                                  Assign Alternative Shop ({currentService.name})
-                                </h3>
-                                <div className="grid grid-cols-1 gap-3">
-                                  {categoryShops
-                                    .filter((s) => s.id !== selectedLead.selectedPartnerId)
-                                    .map((shop) => (
-                                      <div key={shop.id} className="p-4 border border-border/80 rounded-2xl flex justify-between items-center bg-card hover:bg-muted/10 transition-colors">
-                                        <div>
-                                          <h4 className="font-bold text-sm text-foreground">{shop.name}</h4>
-                                          <p className="text-xs text-muted-foreground">Area: {shop.area} | Contact: {shop.phone}</p>
-                                        </div>
-                                        <button
-                                          onClick={() => handleAssignPartner(selectedLead.id, shop.id, shop.name, "shop")}
-                                          className="px-4 py-2 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-bold rounded-xl transition-all cursor-pointer"
-                                        >
-                                          Assign This Shop
-                                        </button>
-                                      </div>
-                                    ))}
-                                  {categoryShops.filter((s) => s.id !== selectedLead.selectedPartnerId).length === 0 && (
-                                    <p className="text-xs text-muted-foreground italic">No other active shops found in this category.</p>
-                                  )}
+                      {/* Assigned Partner Details if exists */}
+                      <div className="border-t border-border/60 pt-6">
+                        <h3 className="text-lg font-black mb-4">Assigned Service Partner</h3>
+                        {(() => {
+                          const assignedWorker = workers.find(w => w.id === selectedLead.assignedWorkerId);
+                          if (assignedWorker) {
+                            return (
+                              <div className="p-6 bg-muted/10 border border-border/60 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div className="space-y-1">
+                                  <h4 className="font-black text-xl text-foreground">{assignedWorker.name}</h4>
+                                  <p className="text-xs text-muted-foreground">Mobile Contact: <strong>{assignedWorker.mobile}</strong></p>
+                                  <p className="text-xs text-muted-foreground">Rating: <strong>{assignedWorker.rating}★</strong> | Completed Jobs: {assignedWorker.totalCompletedJobs}</p>
                                 </div>
+                                <span className="text-xs font-black text-emerald-600 bg-emerald-100 px-3 py-1.5 rounded-full uppercase">
+                                  Job Accepted
+                                </span>
                               </div>
-                            </div>
-                          );
-                        } else if (currentService?.type === "vehicle") {
-                          const selectedVehicle = vehicles.find((v) => v.id === selectedLead.selectedPartnerId);
-                          const categoryVehicles = vehicles.filter((v) => v.category === selectedLead.serviceType && v.status === "active" && v.availability === "available");
-
-                          return (
-                            <div className="space-y-6">
-                              {/* Selected Vehicle Section */}
-                              <div className="space-y-4">
-                                <h3 className="text-lg font-black flex items-center gap-2">
-                                  🚗 Customer's Selected Vehicle
-                                </h3>
-                                {selectedVehicle ? (
-                                  <div className="p-6 border border-primary/30 bg-primary/5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div>
-                                      <h4 className="font-bold text-xl">{selectedVehicle.vehicleName}</h4>
-                                      <p className="text-xs text-muted-foreground mt-1">Number: {selectedVehicle.vehicleNumber} | Contact: {selectedVehicle.phone}</p>
-                                      <p className="text-xs text-muted-foreground">Area: {selectedVehicle.area} | Price: ₹{selectedVehicle.price}/day</p>
-                                    </div>
-                                    <button
-                                      onClick={() => handleAssignPartner(selectedLead.id, selectedVehicle.id, selectedVehicle.vehicleName, "vehicle")}
-                                      className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-sm shadow hover:shadow-primary/30 transition-all cursor-pointer shrink-0"
-                                    >
-                                      Confirm & Assign Vehicle
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="p-5 border border-dashed border-border/80 rounded-2xl text-center text-muted-foreground text-sm">
-                                    No specific vehicle selected by the customer.
-                                  </div>
-                                )}
+                            );
+                          } else {
+                            return (
+                              <div className="p-8 border border-dashed border-border/80 rounded-2xl text-center text-muted-foreground bg-muted/5">
+                                No partner has accepted this booking request yet. Eligible partners in the category are receiving notification alerts.
                               </div>
-
-                              {/* Alternative Vehicles List */}
-                              <div className="space-y-4 border-t border-border/60 pt-6">
-                                <h3 className="text-base font-bold text-foreground">
-                                  Assign Alternative Available Vehicle ({currentService.name})
-                                </h3>
-                                <div className="grid grid-cols-1 gap-3">
-                                  {categoryVehicles
-                                    .filter((v) => v.id !== selectedLead.selectedPartnerId)
-                                    .map((vehicle) => (
-                                      <div key={vehicle.id} className="p-4 border border-border/80 rounded-2xl flex justify-between items-center bg-card hover:bg-muted/10 transition-colors">
-                                        <div>
-                                          <h4 className="font-bold text-sm text-foreground">{vehicle.vehicleName}</h4>
-                                          <p className="text-xs text-muted-foreground">Number: {vehicle.vehicleNumber} | Area: {vehicle.area} | Price: ₹{vehicle.price}/day</p>
-                                        </div>
-                                        <button
-                                          onClick={() => handleAssignPartner(selectedLead.id, vehicle.id, vehicle.vehicleName, "vehicle")}
-                                          className="px-4 py-2 bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-bold rounded-xl transition-all cursor-pointer"
-                                        >
-                                          Assign This Vehicle
-                                        </button>
-                                      </div>
-                                    ))}
-                                  {categoryVehicles.filter((v) => v.id !== selectedLead.selectedPartnerId).length === 0 && (
-                                    <p className="text-xs text-muted-foreground italic">No other available vehicles found in this category.</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        } else {
-                          // Default: Worker recommendations engine for Home Services
-                          return (
-                            <div className="space-y-4">
-                              <h3 className="text-lg font-black flex items-center gap-2">
-                                🏆 Recommended Workers in {selectedLead.customerArea} ({getServiceName(selectedLead.serviceType)})
-                              </h3>
-                              
-                              <div className="space-y-3">
-                                {getRecommendedWorkers(selectedLead.serviceType, selectedLead.customerArea).map((recWorker, index) => (
-                                  <div 
-                                    key={recWorker.id} 
-                                    className="p-5 border border-border/80 hover:border-primary/50 bg-background/50 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all"
-                                  >
-                                    <div className="space-y-1">
-                                      <h4 className="font-bold text-base flex items-center gap-2">
-                                        <span className="text-primary font-black">#{index + 1}</span> {recWorker.name}
-                                        <span className="text-xs font-semibold text-muted-foreground font-mono">({recWorker.experience} yrs exp)</span>
-                                      </h4>
-                                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                        <span>Rating: <strong className="text-foreground">{recWorker.rating}★</strong></span>
-                                        <span>Completed Jobs: <strong className="text-foreground">{recWorker.totalCompletedJobs}</strong></span>
-                                        <span>Acceptance Rate: <strong className="text-foreground">{recWorker.totalAssignedJobs > 0 ? Math.round((recWorker.totalAcceptedJobs / recWorker.totalAssignedJobs) * 100) : 100}%</strong></span>
-                                        <span>Completion Rate: <strong className="text-foreground">{recWorker.totalAcceptedJobs > 0 ? Math.round((recWorker.totalCompletedJobs / recWorker.totalAcceptedJobs) * 100) : 100}%</strong></span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-4 w-full md:w-auto shrink-0 justify-between md:justify-end">
-                                      <span className="text-sm font-black text-primary bg-primary/10 px-3 py-1.5 rounded-xl font-mono">
-                                        Score: {recWorker.score}
-                                      </span>
-                                      <button
-                                        onClick={() => handleAssignWorker(selectedLead.id, recWorker.id, recWorker.name)}
-                                        className="px-6 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-sm shadow hover:shadow-primary/30 transition-all cursor-pointer"
-                                      >
-                                        Assign
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-
-                                {getRecommendedWorkers(selectedLead.serviceType, selectedLead.customerArea).length === 0 && (
-                                  <div className="p-8 border border-dashed border-border/80 rounded-2xl text-center text-muted-foreground">
-                                    No active recommended workers found matching this category and area. Ensure workers exist with active status.
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }
-                      })()}
+                            );
+                          }
+                        })()}
+                      </div>
                     </div>
                   ) : (
                     /* Leads Table */
@@ -1561,14 +1436,15 @@ export default function AdminDashboardPage() {
                                     </td>
                                     <td className="px-6 py-4 text-right space-x-2">
                                       {/* Assignment trigger */}
-                                      {(lead.status === "NEW" || lead.status === "REJECTED") && (
-                                        <button
-                                          onClick={() => setSelectedLead(lead)}
-                                          className="px-3 py-1.5 bg-primary text-primary-foreground font-bold text-xs rounded-lg cursor-pointer"
-                                        >
-                                          Assign Partner
-                                        </button>
-                                      )}
+                                      <button
+                                         onClick={() => {
+                                           setSelectedLead(lead);
+                                           setActiveTab("leads");
+                                         }}
+                                         className="px-3 py-1.5 border border-border/80 hover:bg-muted text-foreground font-bold text-xs rounded-lg cursor-pointer"
+                                       >
+                                         View Details
+                                       </button>
                                       
                                       {/* WhatsApp to Worker */}
                                       {lead.status === "ASSIGNED" && assignedWorker && (
@@ -1690,6 +1566,24 @@ export default function AdminDashboardPage() {
                             className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
                           />
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <input
+                            type="email"
+                            required
+                            placeholder="Partner Login Email"
+                            value={newWorkerEmail}
+                            onChange={(e) => setNewWorkerEmail(e.target.value)}
+                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm font-semibold"
+                          />
+                          <input
+                            type="password"
+                            required
+                            placeholder="Partner Login Password"
+                            value={newWorkerPassword}
+                            onChange={(e) => setNewWorkerPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm font-semibold"
+                          />
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <select
                             required
@@ -1750,6 +1644,24 @@ export default function AdminDashboardPage() {
                             value={editWorkerMobile}
                             onChange={(e) => setEditWorkerMobile(e.target.value)}
                             className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <input
+                            type="email"
+                            required
+                            placeholder="Partner Login Email"
+                            value={editWorkerEmail}
+                            onChange={(e) => setEditWorkerEmail(e.target.value)}
+                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm font-semibold"
+                          />
+                          <input
+                            type="password"
+                            required
+                            placeholder="Partner Login Password"
+                            value={editWorkerPassword}
+                            onChange={(e) => setEditWorkerPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm font-semibold"
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1887,6 +1799,8 @@ export default function AdminDashboardPage() {
                                         setEditWorkerService(worker.serviceType);
                                         setEditWorkerArea(worker.area);
                                         setEditWorkerExp(worker.experience.toString());
+                                        setEditWorkerEmail(worker.email || "");
+                                        setEditWorkerPassword(worker.password || "");
                                       }}
                                       className="px-2.5 py-1.5 border border-border/80 hover:bg-muted text-xs font-bold rounded-lg transition-colors cursor-pointer"
                                     >

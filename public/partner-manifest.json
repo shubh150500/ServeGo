@@ -1,0 +1,17 @@
+{
+  "short_name": "ServeGo Partner",
+  "name": "ServeGo Partner Portal",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/partner/portal",
+  "background_color": "#1C1816",
+  "theme_color": "#D97753",
+  "display": "standalone",
+  "orientation": "portrait"
+}
