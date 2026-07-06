@@ -139,7 +139,7 @@ export default function PartnerPortalPage() {
 
     // 1. Listen for Active Accepted Job
     const activeQuery = query(
-      collection(db, "leads"),
+      collection(db, "bookings"),
       where("assignedWorkerId", "==", partner.id),
       where("status", "in", ["ACCEPTED", "ASSIGNED"])
     );
@@ -156,7 +156,7 @@ export default function PartnerPortalPage() {
 
     // 2. Listen for Available NEW Leads in their Service Category
     const availableQuery = query(
-      collection(db, "leads"),
+      collection(db, "bookings"),
       where("status", "==", "NEW"),
       where("serviceType", "==", partner.serviceType)
     );
@@ -249,7 +249,7 @@ export default function PartnerPortalPage() {
     setErrorMsg("");
 
     try {
-      const leadRef = doc(db, "leads", leadId);
+      const leadRef = doc(db, "bookings", leadId);
       const partnerRef = doc(db, "workers", partner.id);
 
       await runTransaction(db, async (transaction) => {
@@ -313,7 +313,7 @@ export default function PartnerPortalPage() {
       const photoUrl = await getDownloadURL(uploadResult.ref);
 
       // 2. Perform Transaction to update job status to COMPLETED
-      const leadRef = doc(db, "leads", activeLead.id);
+      const leadRef = doc(db, "bookings", activeLead.id);
       const partnerRef = doc(db, "workers", partner.id);
 
       await runTransaction(db, async (transaction) => {
