@@ -58,7 +58,7 @@ const getLiveServiceId = (staticId: string): string => {
   return mapping[staticId] || staticId;
 };
 
-const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.6): Promise<Blob> => {
+const compressImageToBase64 = (file: File, maxWidth = 600, maxHeight = 600, quality = 0.5): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -88,17 +88,8 @@ const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(img, 0, 0, width, height);
 
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error("Canvas toBlob failed"));
-            }
-          },
-          "image/jpeg",
-          quality
-        );
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
       };
       img.onerror = (err) => reject(err);
     };
@@ -432,21 +423,11 @@ export default function PartnerPortalPage() {
     setUploadStep("Compressing image...");
 
     try {
-      // 1. Compress image to light JPEG (~200KB) and upload to Firebase Storage
-      const compressedBlob = await compressImage(photoFile);
-      
-      setUploadStep("Uploading image to storage...");
-      const fileExt = "jpg";
-      const fileRef = ref(storage, `completions/${activeLead.id}/${Date.now()}_proof.${fileExt}`);
-      
-      const uploadResult = await uploadBytes(fileRef, compressedBlob, {
-        contentType: "image/jpeg"
-      });
-      
-      setUploadStep("Acquiring photo URL...");
-      const photoUrl = await getDownloadURL(uploadResult.ref);
+      // 1. Compress image directly to a light base64 Data URL (~30KB)
+      const base64Data = await compressImageToBase64(photoFile);
       
       setUploadStep("Saving status in database...");
+      const photoUrl = base64Data;
 
       // 2. Perform Transaction to update job status to COMPLETED
       const leadRef = doc(db, "bookings", activeLead.id);
