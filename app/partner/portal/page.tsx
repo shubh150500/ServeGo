@@ -65,19 +65,55 @@ export default function PartnerPortalPage() {
   // Notification alert state
   const [newLeadAlert, setNewLeadAlert] = useState<any>(null);
   
+  // PWA Installation Hook States
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
   // Track already notified lead IDs to avoid repeated triggers on update
   const notifiedLeads = useRef<Set<string>>(new Set());
 
   // Setup PWA install elements
   useEffect(() => {
-    // Register PWA Service Worker
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/partner-sw.js").then(
-        (reg) => console.log("SW Registered with scope:", reg.scope),
-        (err) => console.warn("SW registration failed:", err)
-      );
-    }
+    // Register PWA Service Worker and Manifest dynamically
+    if (typeof window !== "undefined") {
+      // Inject manifest link
+      const existingLink = document.querySelector('link[rel="manifest"]');
+      if (existingLink) {
+        existingLink.setAttribute("href", "/partner-manifest.json");
+      } else {
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = "/partner-manifest.json";
+        document.head.appendChild(link);
+      }
 
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/partner-sw.js").then(
+          (reg) => console.log("SW Registered with scope:", reg.scope),
+          (err) => console.warn("SW registration failed:", err)
+        );
+      }
+
+      const checkStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+      setIsStandalone(checkStandalone);
+
+      const handlePrompt = (e: any) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        if (!checkStandalone) {
+          setShowInstallPrompt(true);
+        }
+      };
+
+      window.addEventListener("beforeinstallprompt", handlePrompt);
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handlePrompt);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
     // Load Profile
     const profile = localStorage.getItem("partner_profile");
     if (!profile) {
@@ -605,6 +641,52 @@ export default function PartnerPortalPage() {
               </button>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PWA Install Promotion Modal Overlay */}
+      {showInstallPrompt && !isStandalone && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-55 backdrop-blur-md animate-in fade-in">
+          <div className="bg-[#28211E] border border-[#4D423C] p-8 rounded-3xl w-full max-w-md text-center space-y-6 shadow-2xl">
+            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mx-auto">
+              <Upload className="w-10 h-10 animate-bounce" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="font-black text-2xl text-[#FAF6F1]">Install Partner App</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed px-2">
+                This portal requires installation to run on your home screen. Installing enables standalone view, fast startup, custom vibration codes, and audio ring alerts.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={async () => {
+                  if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === "accepted") {
+                      setShowInstallPrompt(false);
+                      setDeferredPrompt(null);
+                      setIsStandalone(true);
+                    }
+                  } else {
+                    alert("Click the three dots in your mobile browser and select 'Add to Home screen' or 'Install App' to install.");
+                  }
+                }}
+                className="w-full py-4 bg-primary text-primary-foreground font-black text-sm rounded-2xl shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2 cursor-pointer btn-press border-none"
+              >
+                Install App Now
+              </button>
+              
+              <button
+                onClick={() => setShowInstallPrompt(false)}
+                className="w-full py-3 border border-[#4D423C] hover:bg-[#4D423C]/20 text-xs font-bold rounded-2xl text-muted-foreground cursor-pointer transition-colors"
+              >
+                Continue in Browser
+              </button>
+            </div>
           </div>
         </div>
       )}

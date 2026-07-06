@@ -15,6 +15,23 @@ export default function PartnerLoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Inject partner manifest and service worker dynamically
+    if (typeof window !== "undefined") {
+      const existingLink = document.querySelector('link[rel="manifest"]');
+      if (existingLink) {
+        existingLink.setAttribute("href", "/partner-manifest.json");
+      } else {
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = "/partner-manifest.json";
+        document.head.appendChild(link);
+      }
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/partner-sw.js");
+      }
+    }
+
     // Redirect if already logged in
     const activePartner = localStorage.getItem("partner_profile");
     if (activePartner) {
