@@ -444,6 +444,7 @@ export default function PartnerPortalPage() {
         transaction.update(leadRef, {
           status: "COMPLETED",
           completionPhoto: photoUrl,
+          completionPhotoUrl: photoUrl, // Set completionPhotoUrl to match admin dashboard expectations
           completionRemarks: remarks.trim(),
           completedAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
