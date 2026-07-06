@@ -212,7 +212,7 @@ export default function PartnerPortalPage() {
 
       // Trigger alerts only if a new lead is detected
       if (triggerAlert && newestLead) {
-        playAlertSound();
+        playAlertSound(newestLead);
         triggerVibrate();
         triggerBrowserNotification(newestLead);
         setNewLeadAlert(newestLead);
@@ -228,8 +228,33 @@ export default function PartnerPortalPage() {
     };
   }, [partner]);
 
-  // Audio Beep Alert using Web Audio API (Zero static assets required)
-  const playAlertSound = () => {
+  // Audio & Speech Voice Alert (Zero static assets required, maximum volume)
+  const playAlertSound = (lead?: any) => {
+    // 1. Speech synthesis - shouts "New Order! New Order!" and reads details
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel(); // Reset queue
+        const serviceName = SERVICES_MAP[lead?.serviceType] || "service job";
+        const customerArea = lead?.customerArea || "your area";
+        const text = `New Order! New Order! You have a new ${serviceName} booking in ${customerArea}. Please open the app and accept now!`;
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.volume = 1.0; // Max volume
+        utterance.rate = 1.15;  // Fast and urgent
+        utterance.pitch = 1.05; // Slightly high pitch to attract attention
+        
+        // Select an English voice
+        const voices = window.speechSynthesis.getVoices();
+        const targetVoice = voices.find(v => v.lang.startsWith("en-") || v.lang.startsWith("hi-"));
+        if (targetVoice) utterance.voice = targetVoice;
+        
+        window.speechSynthesis.speak(utterance);
+      } catch (speechErr) {
+        console.warn("Speech synthesis was blocked or failed:", speechErr);
+      }
+    }
+
+    // 2. Fallback high-volume sawtooth synthesizer beep
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -238,40 +263,59 @@ export default function PartnerPortalPage() {
       const playTone = (freq: number, start: number, duration: number) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = "sine";
+        osc.type = "sawtooth"; // Sharper, louder buzzer-like waveform
         osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-        gain.gain.setValueAtTime(0.4, ctx.currentTime + start);
+        gain.gain.setValueAtTime(0.8, ctx.currentTime + start); // Extremely loud gain
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(ctx.currentTime + start);
         osc.stop(ctx.currentTime + start + duration);
       };
 
-      // Play double high-pitch alert tones
-      playTone(880, 0, 0.2); // A5 tone
-      playTone(1174.66, 0.18, 0.35); // D6 tone
+      // Play 3 loud alarm cycle siren buzzes
+      for (let i = 0; i < 3; i++) {
+        playTone(950, i * 0.5, 0.2);
+        playTone(1300, i * 0.5 + 0.2, 0.25);
+      }
     } catch (err) {
-      console.warn("Web Audio API was blocked or unsupported:", err);
+      console.warn("Audio Context alert failed to play:", err);
     }
   };
 
-  // Vibration alert
+  // Intense repeating vibration pattern
   const triggerVibrate = () => {
     if (typeof window !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate([300, 100, 300, 100, 300]);
+      // Long vibration cycles to draw physical alert
+      navigator.vibrate([1000, 300, 1000, 300, 1000, 300, 1000]);
     }
   };
 
-  // Browser system push notification card
+  // Browser system push notification with Service Worker compatibility for mobile Chrome
   const triggerBrowserNotification = (lead: any) => {
-    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-      const title = `New ${SERVICES_MAP[lead.serviceType] || "Service"} Job!`;
-      new Notification(title, {
-        body: `Area: ${lead.customerArea} • Tap to view and accept.`,
-        icon: "/logo.png",
-        tag: lead.id,
-        requireInteraction: true
-      });
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        const title = `🚨 NEW ${SERVICES_MAP[lead.serviceType]?.toUpperCase() || "SERVICE"} DISPATCH!`;
+        const options = {
+          body: `Area: ${lead.customerArea}\nWork Description: ${lead.description || "General Repair Work"}\nTap here to accept now!`,
+          icon: "/logo.png",
+          badge: "/logo.png",
+          tag: lead.id,
+          vibrate: [1000, 300, 1000, 300, 1000],
+          requireInteraction: true
+        };
+
+        // Mobile Chrome requires serviceWorker.ready to display native push notifications
+        if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+          navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification(title, options);
+          }).catch(swErr => {
+            console.warn("SW push fallback triggered:", swErr);
+            new Notification(title, options);
+          });
+        } else {
+          new Notification(title, options);
+        }
+      }
     }
   };
 
