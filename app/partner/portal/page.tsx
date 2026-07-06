@@ -329,7 +329,10 @@ export default function PartnerPortalPage() {
       const partnerRef = doc(db, "workers", partner.id);
 
       await runTransaction(db, async (transaction) => {
+        // 1. Execute all reads first
         const leadSnap = await transaction.get(leadRef);
+        const partnerSnap = await transaction.get(partnerRef);
+
         if (!leadSnap.exists()) {
           throw new Error("This booking request no longer exists.");
         }
@@ -339,7 +342,7 @@ export default function PartnerPortalPage() {
           throw new Error("This job has already been accepted by another partner.");
         }
 
-        // Lock status to ACCEPTED and assign to partner
+        // 2. Execute all writes/updates after
         transaction.update(leadRef, {
           status: "ACCEPTED",
           assignedWorkerId: partner.id,
@@ -347,9 +350,7 @@ export default function PartnerPortalPage() {
           updatedAt: serverTimestamp(),
         });
 
-        // Increment partner accepted count
-        const partnerSnap = await transaction.get(partnerRef);
-        const currentAccepted = partnerSnap.data()?.totalAcceptedJobs || 0;
+        const currentAccepted = partnerSnap.exists() ? (partnerSnap.data()?.totalAcceptedJobs || 0) : 0;
         transaction.update(partnerRef, {
           totalAcceptedJobs: currentAccepted + 1,
           lastActivity: serverTimestamp(),
@@ -393,9 +394,13 @@ export default function PartnerPortalPage() {
       const partnerRef = doc(db, "workers", partner.id);
 
       await runTransaction(db, async (transaction) => {
+        // 1. Execute all reads first
         const leadSnap = await transaction.get(leadRef);
+        const partnerSnap = await transaction.get(partnerRef);
+
         if (!leadSnap.exists()) throw new Error("Booking does not exist.");
 
+        // 2. Execute all writes/updates after
         transaction.update(leadRef, {
           status: "COMPLETED",
           completionPhoto: photoUrl,
@@ -404,8 +409,7 @@ export default function PartnerPortalPage() {
           updatedAt: serverTimestamp(),
         });
 
-        const partnerSnap = await transaction.get(partnerRef);
-        const currentCompleted = partnerSnap.data()?.totalCompletedJobs || 0;
+        const currentCompleted = partnerSnap.exists() ? (partnerSnap.data()?.totalCompletedJobs || 0) : 0;
         transaction.update(partnerRef, {
           totalCompletedJobs: currentCompleted + 1,
           lastActivity: serverTimestamp(),
