@@ -164,7 +164,7 @@ export default function PartnerPortalPage() {
     );
 
     const unsubActive = onSnapshot(activeQuery, (snapshot) => {
-      setDebugInfo(prev => ({ ...prev, activeCount: snapshot.size }));
+      setDebugInfo((prev: any) => ({ ...prev, activeCount: snapshot.size }));
       if (!snapshot.empty) {
         // Load the single active job
         const docSnap = snapshot.docs[0];
@@ -174,7 +174,7 @@ export default function PartnerPortalPage() {
       }
     }, (err) => {
       console.error("Active Query error:", err);
-      setDebugInfo(prev => ({ ...prev, error: "Active Query Error: " + err.message }));
+      setDebugInfo((prev: any) => ({ ...prev, error: "Active Query Error: " + err.message }));
     });
 
     // 2. Listen for Available NEW Leads in their Service Category
@@ -185,7 +185,7 @@ export default function PartnerPortalPage() {
     );
 
     const unsubAvailable = onSnapshot(availableQuery, (snapshot) => {
-      setDebugInfo(prev => ({ ...prev, availableCount: snapshot.size }));
+      setDebugInfo((prev: any) => ({ ...prev, availableCount: snapshot.size }));
       const list: any[] = [];
       let triggerAlert = false;
       let newestLead: any = null;
@@ -214,7 +214,7 @@ export default function PartnerPortalPage() {
       }
     }, (err) => {
       console.error("Available Query error:", err);
-      setDebugInfo(prev => ({ ...prev, error: "Available Query Error: " + err.message }));
+      setDebugInfo((prev: any) => ({ ...prev, error: "Available Query Error: " + err.message }));
     });
 
     return () => {
