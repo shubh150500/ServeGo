@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Lock, Mail, ShieldAlert, KeyRound } from "lucide-react";
+import { Lock, Phone, ShieldAlert, KeyRound, UserPlus } from "lucide-react";
 
 export default function PartnerLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,8 +44,16 @@ export default function PartnerLoginPage() {
     setError("");
     setLoading(true);
 
-    if (!email.trim() || !password.trim()) {
+    const cleanMobile = mobile.trim().replace(/\s+/g, "");
+
+    if (!cleanMobile || !password.trim()) {
       setError("Please fill out all fields.");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{10}$/.test(cleanMobile)) {
+      setError("Please enter a valid 10-digit mobile number.");
       setLoading(false);
       return;
     }
@@ -53,14 +61,14 @@ export default function PartnerLoginPage() {
     try {
       const q = query(
         collection(db, "workers"),
-        where("email", "==", email.trim().toLowerCase()),
+        where("mobile", "==", cleanMobile),
         where("password", "==", password)
       );
 
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        setError("Invalid email or password. Please check your credentials.");
+        setError("Invalid mobile number or password. Please check your credentials.");
         setLoading(false);
         return;
       }
@@ -105,7 +113,7 @@ export default function PartnerLoginPage() {
           </div>
           <h1 className="text-3xl font-black tracking-tight">Partner Portal</h1>
           <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-            Enter your registered partner email and password to access dispatch jobs.
+            Enter your registered mobile number and password to access dispatch jobs.
           </p>
         </div>
 
@@ -119,22 +127,23 @@ export default function PartnerLoginPage() {
         <form onSubmit={handleLoginSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground/80">Registered Email</label>
+              <label className="text-xs font-bold text-foreground/80">Mobile Number</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
-                  type="email"
+                  type="tel"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. partner@servego.co.in"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  placeholder="e.g. 9876543210"
+                  maxLength={10}
                   className="w-full pl-11 pr-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground/80">Security Password</label>
+              <label className="text-xs font-bold text-foreground/80">Password</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
@@ -165,10 +174,19 @@ export default function PartnerLoginPage() {
           </button>
         </form>
 
-        <div className="text-center pt-2">
-          <Link href="/" className="text-xs font-bold text-primary hover:underline transition-colors">
-            Return to Customer Website
+        <div className="text-center space-y-3 pt-2">
+          <Link 
+            href="/partner/register" 
+            className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline transition-colors"
+          >
+            <UserPlus className="w-4 h-4" />
+            New Partner? Register Here
           </Link>
+          <div>
+            <Link href="/" className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors">
+              Return to Customer Website
+            </Link>
+          </div>
         </div>
 
       </div>

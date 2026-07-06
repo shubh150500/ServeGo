@@ -689,7 +689,7 @@ export default function AdminDashboardPage() {
       if (lead && partnerDetails) {
         const contactNo = partnerDetails.whatsapp || partnerDetails.phone || "";
         const text = `Hello ${lead.customerName}! We have assigned ${partnerName} (Contact: ${contactNo}, Rating: ${partnerDetails.rating || '5.0'}★) to resolve your ${getServiceName(lead.serviceType)} request. You can contact them directly to coordinate. Thank you for choosing ServeGo!`;
-        const whatsappLink = `https://wa.me/${lead.customerMobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
+        const whatsappLink = `https://wa.me/${formatWhatsAppNumber(lead.customerMobile)}?text=${encodeURIComponent(text)}`;
         if (window) {
           window.open(whatsappLink, "_blank");
         }
@@ -1037,28 +1037,36 @@ export default function AdminDashboardPage() {
       .sort((a, b) => b.score - a.score);
   };
 
+  // Format phone number for WhatsApp (auto-prepend 91 for Indian numbers)
+  const formatWhatsAppNumber = (num: string): string => {
+    let clean = num.replace(/[^\d]/g, ""); // strip all non-digits
+    if (clean.startsWith("0")) clean = clean.substring(1); // remove leading 0
+    if (clean.length === 10) clean = "91" + clean; // 10-digit Indian number
+    return clean;
+  };
+
   // Prefilled WhatsApp link generator for Workers
   const generateWorkerWhatsAppLink = (lead: any, worker: any) => {
     const text = `Hello ${worker.name}! You have been assigned a new ${getServiceName(lead.serviceType)} job in ${lead.customerArea}.\n\nView details & accept/reject here:\nhttps://servego.co.in/worker/job/${lead.id}/accept?token=${lead.securityToken}`;
-    return `https://wa.me/${worker.mobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${formatWhatsAppNumber(worker.mobile)}?text=${encodeURIComponent(text)}`;
   };
 
   // Prefilled WhatsApp link generator for Customers
   const generateCustomerWhatsAppLink = (lead: any, worker: any) => {
     const text = `Hello ${lead.customerName}! We have assigned ${worker.name} (Contact: ${worker.mobile}, Rating: ${worker.rating}★) to resolve your service request. They will contact you shortly to coordinate timing. Thank you for choosing ServeGo!`;
-    return `https://wa.me/${lead.customerMobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${formatWhatsAppNumber(lead.customerMobile)}?text=${encodeURIComponent(text)}`;
   };
 
   // WhatsApp link generator to send worker completion proof upload page
   const generateWorkerCompletionWhatsAppLink = (lead: any, worker: any) => {
     const text = `Hello ${worker.name}! Please upload the work completion proof (photos) for your ${getServiceName(lead.serviceType)} job at ${lead.customerArea} here:\nhttps://servego.co.in/worker/job/${lead.id}/complete?token=${lead.securityToken}`;
-    return `https://wa.me/${worker.mobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${formatWhatsAppNumber(worker.mobile)}?text=${encodeURIComponent(text)}`;
   };
 
   // WhatsApp link generator to send customer feedback review page
   const generateCustomerReviewWhatsAppLink = (lead: any) => {
     const text = `Hello ${lead.customerName}! Your service request for ${getServiceName(lead.serviceType)} has been completed. Please rate your experience and provide your valuable feedback here:\nhttps://servego.co.in/review/${lead.id}`;
-    return `https://wa.me/${lead.customerMobile.replace(/\s+/g, "")}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${formatWhatsAppNumber(lead.customerMobile)}?text=${encodeURIComponent(text)}`;
   };
 
   if (authLoading) {
