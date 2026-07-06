@@ -26,11 +26,8 @@ service cloud.firestore {
 
     // 2. Bookings (Leads) Collection
     match /bookings/{bookingId} {
-      // Public can submit new bookings
-      allow create: if true;
-      // Public can read or edit a booking if they hold the correct secure link token, or if they are logged in
-      allow read, update: if isAdmin() || request.auth != null || (request.query.token == resource.data.securityToken || request.resource.data.securityToken == resource.data.securityToken);
-      allow delete: if isAdmin();
+      // Anyone can read, create, or update bookings for MVP partner workflow
+      allow read, write: if true;
     }
 
     // 3. Customers Collection
