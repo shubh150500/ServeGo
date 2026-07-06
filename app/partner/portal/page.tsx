@@ -67,6 +67,13 @@ export default function PartnerPortalPage() {
   const [availableLeads, setAvailableLeads] = useState<any[]>([]);
   const [activeLead, setActiveLead] = useState<any>(null);
 
+  // Dev diagnostic states
+  const [debugInfo, setDebugInfo] = useState<any>({
+    activeCount: 0,
+    availableCount: 0,
+    error: ""
+  });
+
   // Complete job modal state
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [remarks, setRemarks] = useState("");
@@ -157,6 +164,7 @@ export default function PartnerPortalPage() {
     );
 
     const unsubActive = onSnapshot(activeQuery, (snapshot) => {
+      setDebugInfo(prev => ({ ...prev, activeCount: snapshot.size }));
       if (!snapshot.empty) {
         // Load the single active job
         const docSnap = snapshot.docs[0];
@@ -164,6 +172,9 @@ export default function PartnerPortalPage() {
       } else {
         setActiveLead(null);
       }
+    }, (err) => {
+      console.error("Active Query error:", err);
+      setDebugInfo(prev => ({ ...prev, error: "Active Query Error: " + err.message }));
     });
 
     // 2. Listen for Available NEW Leads in their Service Category
@@ -174,6 +185,7 @@ export default function PartnerPortalPage() {
     );
 
     const unsubAvailable = onSnapshot(availableQuery, (snapshot) => {
+      setDebugInfo(prev => ({ ...prev, availableCount: snapshot.size }));
       const list: any[] = [];
       let triggerAlert = false;
       let newestLead: any = null;
@@ -200,6 +212,9 @@ export default function PartnerPortalPage() {
         triggerBrowserNotification(newestLead);
         setNewLeadAlert(newestLead);
       }
+    }, (err) => {
+      console.error("Available Query error:", err);
+      setDebugInfo(prev => ({ ...prev, error: "Available Query Error: " + err.message }));
     });
 
     return () => {
@@ -702,6 +717,13 @@ export default function PartnerPortalPage() {
           </div>
         </div>
       )}
+
+      {/* Dev Diagnostics Footer */}
+      <footer className="mt-auto p-4 bg-black/40 border-t border-[#4D423C]/30 text-[10px] text-muted-foreground font-mono space-y-1 w-full text-center">
+        <p>Partner: {partner.name} | ID: {partner.id} | Cat: {partner.serviceType} (Live Query: {getLiveServiceId(partner.serviceType)})</p>
+        <p>Active Match: {debugInfo.activeCount} | Available Match: {debugInfo.availableCount}</p>
+        {debugInfo.error && <p className="text-rose-400 font-bold">Error: {debugInfo.error}</p>}
+      </footer>
 
     </div>
   );
