@@ -1799,8 +1799,8 @@ export default function AdminDashboardPage() {
                                         setEditWorkerService(worker.serviceType);
                                         setEditWorkerArea(worker.area);
                                         setEditWorkerExp(worker.experience.toString());
-                                        setEditWorkerEmail(worker.email || "");
-                                        setEditWorkerPassword(worker.password || "");
+                                        setEditWorkerEmail((worker as any).email || "");
+                                        setEditWorkerPassword((worker as any).password || "");
                                       }}
                                       className="px-2.5 py-1.5 border border-border/80 hover:bg-muted text-xs font-bold rounded-lg transition-colors cursor-pointer"
                                     >
