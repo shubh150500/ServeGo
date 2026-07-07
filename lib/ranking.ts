@@ -14,7 +14,7 @@ export interface WorkerMetrics {
   totalRejectedJobs: number;
   totalCompletedJobs: number;
   lastActivity: Timestamp | { seconds: number; nanoseconds: number } | null;
-  status: "active" | "suspended" | "removed";
+  status: "active" | "suspended" | "removed" | "pending";
   createdAt: Timestamp;
 }
 
