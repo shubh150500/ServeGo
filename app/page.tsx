@@ -66,6 +66,50 @@ export default function Home() {
   const router = useRouter();
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
+  const [partnerDeferredPrompt, setPartnerDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const existingLink = document.querySelector('link[rel="manifest"]');
+      if (existingLink) {
+        existingLink.setAttribute("href", "/partner-manifest.json");
+      } else {
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = "/partner-manifest.json";
+        document.head.appendChild(link);
+      }
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/partner-sw.js");
+      }
+
+      const handlePrompt = (e: Event) => {
+        e.preventDefault();
+        setPartnerDeferredPrompt(e);
+      };
+
+      window.addEventListener("beforeinstallprompt", handlePrompt);
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handlePrompt);
+      };
+    }
+  }, []);
+
+  const handleInstallPartnerApp = (e: React.MouseEvent) => {
+    if (partnerDeferredPrompt) {
+      e.preventDefault();
+      partnerDeferredPrompt.prompt();
+      partnerDeferredPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === "accepted") {
+          console.log("User accepted Partner PWA install");
+        }
+        setPartnerDeferredPrompt(null);
+      });
+    } else {
+      router.push("/partner/register");
+    }
+  };
   
   // Custom states for Testimonials and FAQ
   const [currentReviewIdx, setCurrentReviewIdx] = useState(0);
@@ -916,19 +960,13 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                href="/partner/register"
-                className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground font-black rounded-2xl hover:bg-primary/90 hover:scale-[1.02] shadow-lg hover:shadow-primary/25 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer btn-press border-none text-sm"
+            <div className="flex justify-center items-center">
+              <button
+                onClick={handleInstallPartnerApp}
+                className="w-full sm:w-auto px-10 py-4 bg-primary text-primary-foreground font-black rounded-2xl hover:bg-primary/95 hover:scale-[1.02] shadow-lg hover:shadow-primary/25 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer btn-press border-none text-sm"
               >
                 Register as Partner <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/partner/login"
-                className="w-full sm:w-auto px-8 py-4 bg-muted/60 hover:bg-muted text-foreground font-black rounded-2xl hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border border-border/80 text-sm"
-              >
-                Access Partner Portal <Lock className="w-4 h-4" />
-              </Link>
+              </button>
             </div>
           </div>
         </div>
