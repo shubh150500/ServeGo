@@ -10,7 +10,7 @@ import ServiceIcon from "@/components/ServiceIcon";
 import ThemeToggle from "@/components/ThemeToggle";
 import { collection, addDoc, serverTimestamp, doc, onSnapshot, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { ArrowLeft, CreditCard, ShieldCheck, AlertCircle, CheckCircle, Copy, Check } from "lucide-react";
+import { ArrowLeft, CreditCard, ShieldCheck, AlertCircle, CheckCircle, Copy, Check, FileText } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ service: string }>;
