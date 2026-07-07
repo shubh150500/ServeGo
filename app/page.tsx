@@ -28,8 +28,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
-  Lock,
-  ArrowRight
+  Lock
 } from "lucide-react";
 
 const TESTIMONIALS = [
