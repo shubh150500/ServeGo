@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, collection, addDoc, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { compressProfilePhoto } from "@/lib/imageCompressor";
 import { db } from "@/lib/firebase";
 import { SERVICES_LIST } from "@/lib/services";
 import ServiceIcon from "@/components/ServiceIcon";
@@ -19,7 +20,11 @@ import {
   ExternalLink,
   ChevronRight,
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  AlertTriangle,
+  Camera,
+  X,
+  Send
 } from "lucide-react";
 
 interface PageProps {
@@ -38,6 +43,20 @@ export default function OrderTrackingPage({ params }: PageProps) {
   const [serviceDetails, setServiceDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Mobile verification for complaint
+  const [verifyMobile, setVerifyMobile] = useState("");
+  const [mobileVerified, setMobileVerified] = useState(false);
+  
+  // Complaint states
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [complaintReason, setComplaintReason] = useState("");
+  const [complaintDescription, setComplaintDescription] = useState("");
+  const [complaintPhotos, setComplaintPhotos] = useState<string[]>([]);
+  const [complaintSubmitting, setComplaintSubmitting] = useState(false);
+  const [complaintSuccess, setComplaintSuccess] = useState(false);
+  const [alreadyComplained, setAlreadyComplained] = useState(false);
+  const [complaintWindowDays, setComplaintWindowDays] = useState(5);
 
   // Hook 1: Subscribe to Booking Document
   useEffect(() => {
@@ -129,6 +148,113 @@ export default function OrderTrackingPage({ params }: PageProps) {
 
     return () => unsub();
   }, [booking?.serviceType]);
+
+  // Hook 5: Load complaint window config
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "system_config", "toggles"),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setComplaintWindowDays(data.complaintWindowDays ?? 5);
+        }
+      }
+    );
+    return () => unsub();
+  }, []);
+
+  // Hook 6: Check if complaint already exists for this booking
+  useEffect(() => {
+    if (!bookingId) return;
+    const q = query(collection(db, "complaints"), where("bookingId", "==", bookingId), where("source", "==", "customer"));
+    getDocs(q).then((snap) => {
+      if (!snap.empty) setAlreadyComplained(true);
+    }).catch(() => {});
+  }, [bookingId]);
+
+  // Complaint photo handler
+  const handleComplaintPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newPhotos = [...complaintPhotos];
+    for (let i = 0; i < Math.min(files.length, 3 - newPhotos.length); i++) {
+      try {
+        const compressed = await compressProfilePhoto(files[i]);
+        newPhotos.push(compressed);
+      } catch {}
+    }
+    setComplaintPhotos(newPhotos);
+  };
+
+  // Submit complaint
+  const handleSubmitComplaint = async () => {
+    if (!complaintReason || !booking) return;
+    setComplaintSubmitting(true);
+    try {
+      await addDoc(collection(db, "complaints"), {
+        bookingId: booking.id,
+        customerName: booking.customerName,
+        customerMobile: booking.customerMobile,
+        customerAddress: booking.customerAddress || "",
+        workerId: booking.assignedWorkerId || "",
+        workerName: worker?.name || "",
+        workerMobile: worker?.mobile || "",
+        serviceType: booking.serviceType,
+        reason: complaintReason,
+        description: complaintDescription,
+        photos: complaintPhotos,
+        status: "pending",
+        source: "customer",
+        createdAt: serverTimestamp(),
+        resolvedAt: null,
+        workerResponseTime: null,
+        workerNotes: "",
+        adminNotes: "",
+        adminAction: ""
+      });
+
+      // Try to send push notification to worker
+      try {
+        const subsSnap = await getDocs(query(collection(db, "push_subscriptions"), where("workerId", "==", booking.assignedWorkerId)));
+        for (const subDoc of subsSnap.docs) {
+          const sub = subDoc.data();
+          await fetch("/api/worker/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              subscription: sub.subscription,
+              title: "⚠️ Customer Complaint Filed",
+              body: `${booking.customerName} has raised a complaint for booking ${booking.id.substring(0, 8)}. Reason: ${complaintReason}`,
+              tag: "complaint-" + booking.id
+            })
+          });
+        }
+      } catch {}
+
+      setComplaintSuccess(true);
+      setAlreadyComplained(true);
+    } catch (err: any) {
+      alert("Failed to submit complaint: " + err.message);
+    } finally {
+      setComplaintSubmitting(false);
+    }
+  };
+
+  // Compute complaint window
+  const isComplaintWindowOpen = () => {
+    if (!booking?.completedAt) return false;
+    const completedTime = booking.completedAt.seconds * 1000;
+    const windowMs = complaintWindowDays * 24 * 60 * 60 * 1000;
+    return Date.now() < completedTime + windowMs;
+  };
+
+  const getComplaintDaysLeft = () => {
+    if (!booking?.completedAt) return 0;
+    const completedTime = booking.completedAt.seconds * 1000;
+    const windowMs = complaintWindowDays * 24 * 60 * 60 * 1000;
+    const remaining = (completedTime + windowMs) - Date.now();
+    return Math.max(0, Math.ceil(remaining / (24 * 60 * 60 * 1000)));
+  };
 
   const downloadInvoice = () => {
     if (!booking) return;
@@ -670,6 +796,66 @@ export default function OrderTrackingPage({ params }: PageProps) {
                     Write a Review <ChevronRight className="w-4 h-4" />
                   </Link>
                 </div>
+
+                {/* Complaint Section */}
+                <div className="border-t border-border/60 pt-6 space-y-4">
+                  {!mobileVerified ? (
+                    <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl space-y-3">
+                      <h4 className="font-bold text-sm text-amber-800 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" /> Have an issue with this service?
+                      </h4>
+                      <p className="text-xs text-amber-700">Enter your registered mobile number to verify your identity.</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="tel"
+                          value={verifyMobile}
+                          onChange={(e) => setVerifyMobile(e.target.value)}
+                          placeholder="Enter your mobile number"
+                          maxLength={10}
+                          className="flex-1 px-4 py-2.5 bg-white border border-amber-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 text-foreground"
+                        />
+                        <button
+                          onClick={() => {
+                            const clean = verifyMobile.replace(/\s+/g, "");
+                            if (clean === booking.customerMobile || clean === booking.customerMobile?.slice(-10)) {
+                              setMobileVerified(true);
+                            } else {
+                              alert("Mobile number does not match the booking record.");
+                            }
+                          }}
+                          className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl cursor-pointer border-none"
+                        >
+                          Verify
+                        </button>
+                      </div>
+                    </div>
+                  ) : alreadyComplained || complaintSuccess ? (
+                    <div className="bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-2xl text-xs font-bold text-center">
+                      ✅ A complaint has already been submitted for this booking. Our team and the assigned worker will address it.
+                    </div>
+                  ) : isComplaintWindowOpen() ? (
+                    <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-sm text-amber-800 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" /> Facing an issue?
+                        </h4>
+                        <p className="text-xs text-amber-700">
+                          You have {getComplaintDaysLeft()} day(s) left to raise a complaint for this booking.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowComplaintModal(true)}
+                        className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl cursor-pointer border-none flex items-center gap-2"
+                      >
+                        <AlertTriangle className="w-4 h-4" /> Raise Complaint
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-muted/30 border border-border/60 p-4 rounded-2xl text-center">
+                      <p className="text-xs text-muted-foreground font-bold">Complaint period has expired.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -694,6 +880,92 @@ export default function OrderTrackingPage({ params }: PageProps) {
 
           </div>
         </div>
+      {/* Complaint Modal */}
+      {showComplaintModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-card border border-border/80 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 space-y-5">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-black text-foreground">Raise a Complaint</h3>
+                <button onClick={() => setShowComplaintModal(false)} className="p-1 hover:bg-muted rounded-lg cursor-pointer">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground/80">Select Reason *</label>
+                <select
+                  value={complaintReason}
+                  onChange={(e) => setComplaintReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                >
+                  <option value="">Choose a reason...</option>
+                  <option value="Same issue occurred again">Same issue occurred again</option>
+                  <option value="Worker not responding">Worker not responding</option>
+                  <option value="Poor quality work">Poor quality work</option>
+                  <option value="Behaviour issue">Behaviour issue</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground/80">Description (Optional)</label>
+                <textarea
+                  value={complaintDescription}
+                  onChange={(e) => setComplaintDescription(e.target.value)}
+                  placeholder="Describe the issue in detail..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground/80">Upload Photos (Optional, max 3)</label>
+                <div className="flex gap-2 flex-wrap">
+                  {complaintPhotos.map((p, i) => (
+                    <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-border">
+                      <img src={p} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setComplaintPhotos(complaintPhotos.filter((_, idx) => idx !== i))}
+                        className="absolute top-0 right-0 bg-black/60 text-white p-0.5 rounded-bl-lg cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {complaintPhotos.length < 3 && (
+                    <label className="w-16 h-16 border-2 border-dashed border-border rounded-xl flex items-center justify-center cursor-pointer hover:bg-muted/30 transition-colors">
+                      <Camera className="w-5 h-5 text-muted-foreground" />
+                      <input type="file" accept="image/*" onChange={handleComplaintPhoto} className="hidden" />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Notice */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 p-4 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 space-y-2 leading-relaxed">
+                <p className="font-bold">📋 Important Notice:</p>
+                <p>If the issue is related to the <strong>SAME previous service</strong>, please first contact the assigned worker after submitting the complaint.</p>
+                <p>If it is a completely <strong>NEW issue</strong>, please create a new booking through ServeGo.</p>
+                <p>ServeGo is a technology platform that connects customers with workers. Final service resolution depends upon the mutual understanding between the customer and the assigned worker.</p>
+              </div>
+
+              <button
+                onClick={handleSubmitComplaint}
+                disabled={!complaintReason || complaintSubmitting}
+                className="w-full py-3.5 bg-primary text-primary-foreground font-black text-sm rounded-xl shadow cursor-pointer border-none disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {complaintSubmitting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                {complaintSubmitting ? "Submitting..." : "Submit Complaint"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

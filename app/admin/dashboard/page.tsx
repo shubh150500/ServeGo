@@ -229,6 +229,14 @@ export default function AdminDashboardPage() {
   const [workerServiceFilter, setWorkerServiceFilter] = useState("ALL");
   const [workerAreaFilter, setWorkerAreaFilter] = useState("");
 
+  // Complaint Filters & Management States
+  const [complaintStatusFilter, setComplaintStatusFilter] = useState("ALL");
+  const [complaintCategoryFilter, setComplaintCategoryFilter] = useState("ALL");
+  const [complaintWorkerFilter, setComplaintWorkerFilter] = useState("ALL");
+  const [complaintSearchQuery, setComplaintSearchQuery] = useState("");
+  const [complaintDateFilter, setComplaintDateFilter] = useState("ALL");
+  const [tempAdminNotes, setTempAdminNotes] = useState<{ [key: string]: string }>({});
+
   // Top level state definitions for simulation and rewards tab to prevent React Hook violations
   const [perfSearch, setPerfSearch] = useState("");
   const [perfCategory, setPerfCategory] = useState("ALL");
@@ -474,7 +482,7 @@ export default function AdminDashboardPage() {
   };
 
   // 1. Feature Toggle Update
-  const handleToggleChange = async (key: string, value: boolean) => {
+  const handleToggleChange = async (key: string, value: any) => {
     try {
       await updateDoc(doc(db, "system_config", "toggles"), {
         [key]: value
@@ -909,6 +917,52 @@ export default function AdminDashboardPage() {
       console.error(err);
     }
   };
+
+  // Warning Worker action
+  const handleWarningWorker = async (workerId: string, name: string) => {
+    try {
+      const workerRef = doc(db, "workers", workerId);
+      const worker = workers.find(w => w.id === workerId);
+      const currentWarnings = (worker as any)?.warningCount || 0;
+      await updateDoc(workerRef, { warningCount: currentWarnings + 1 });
+      await logAction("WORKER_WARNING", `Issued warning to worker ${name} (ID: ${workerId}). Total warnings: ${currentWarnings + 1}`);
+      alert(`Warning issued to ${name}. Total warnings: ${currentWarnings + 1}`);
+    } catch (err: any) {
+      alert("Failed to issue warning: " + err.message);
+    }
+  };
+
+  // Update Complaint Status
+  const handleUpdateComplaintStatus = async (complaintId: string, status: "resolved" | "ignored", adminNotes?: string) => {
+    try {
+      const ref = doc(db, "complaints", complaintId);
+      const updateData: any = { status };
+      if (status === "resolved") {
+        updateData.resolvedAt = serverTimestamp();
+      }
+      if (adminNotes !== undefined) {
+        updateData.adminNotes = adminNotes;
+      }
+      await updateDoc(ref, updateData);
+      await logAction("UPDATE_COMPLAINT_STATUS", `Marked complaint ${complaintId} as ${status.toUpperCase()}`);
+      alert(`Complaint successfully marked as ${status}.`);
+    } catch (err: any) {
+      alert("Failed to update complaint status: " + err.message);
+    }
+  };
+
+  // Update Complaint Notes
+  const handleUpdateComplaintNotes = async (complaintId: string, adminNotes: string) => {
+    try {
+      const ref = doc(db, "complaints", complaintId);
+      await updateDoc(ref, { adminNotes });
+      await logAction("UPDATE_COMPLAINT_NOTES", `Updated admin notes for complaint ${complaintId}`);
+      alert("Admin notes updated successfully.");
+    } catch (err: any) {
+      alert("Failed to update admin notes: " + err.message);
+    }
+  };
+
 
   // Helper to dynamically get service display name
   const getServiceName = (id: string) => {
@@ -2434,99 +2488,324 @@ export default function AdminDashboardPage() {
                 );
               })()}
 
-              {/* Tab 4: Complaints */}  {/* Tab 4: Complaints */}
-              {activeTab === "complaints" && (
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-black">Worker Complaints Log</h2>
-                    <button
-                      onClick={() => setShowAddComplaint(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-sm shadow hover:shadow-primary/30 transition-all cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" /> File New Complaint
-                    </button>
-                  </div>
+              {/* Tab 4: Complaints */}
+              {activeTab === "complaints" && (() => {
+                const filteredComplaints = complaints.filter((comp) => {
+                  if (complaintSearchQuery.trim()) {
+                    const q = complaintSearchQuery.trim().toLowerCase();
+                    const bId = comp.bookingId?.toLowerCase() || "";
+                    if (!bId.includes(q)) return false;
+                  }
+                  if (complaintStatusFilter !== "ALL") {
+                    const status = comp.status || "pending";
+                    if (status !== complaintStatusFilter) return false;
+                  }
+                  if (complaintCategoryFilter !== "ALL") {
+                    if (comp.serviceType !== complaintCategoryFilter) return false;
+                  }
+                  if (complaintWorkerFilter !== "ALL") {
+                    if (comp.workerId !== complaintWorkerFilter) return false;
+                  }
+                  if (complaintDateFilter !== "ALL") {
+                    if (!comp.createdAt?.seconds) return false;
+                    const diffMs = Date.now() - (comp.createdAt.seconds * 1000);
+                    if (complaintDateFilter === "today" && diffMs > 24 * 60 * 60 * 1000) return false;
+                    if (complaintDateFilter === "week" && diffMs > 7 * 24 * 60 * 60 * 1000) return false;
+                    if (complaintDateFilter === "month" && diffMs > 30 * 24 * 60 * 60 * 1000) return false;
+                  }
+                  return true;
+                });
 
-                  {showAddComplaint && (
-                    <div className="bg-card border border-border/80 p-8 rounded-3xl shadow-xl">
-                      <h3 className="text-lg font-black mb-6">Create Customer Complaint File</h3>
-                      <form onSubmit={handleAddComplaint} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <select
+                return (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <h2 className="text-xl font-black">Complaint Management Center</h2>
+                        <p className="text-muted-foreground text-xs mt-0.5">Track, audit, and resolve customer and internal complaints.</p>
+                      </div>
+                      <button
+                        onClick={() => setShowAddComplaint(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-sm shadow hover:shadow-primary/30 transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" /> File New Complaint
+                      </button>
+                    </div>
+
+                    {showAddComplaint && (
+                      <div className="bg-card border border-border/80 p-8 rounded-3xl shadow-xl">
+                        <h3 className="text-lg font-black mb-6">Create Customer Complaint File</h3>
+                        <form onSubmit={handleAddComplaint} className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <select
+                              required
+                              value={complaintWorkerId}
+                              onChange={(e) => setComplaintWorkerId(e.target.value)}
+                              className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                            >
+                              <option value="">Select Service Partner</option>
+                              {workers.filter(w => w.status !== "removed").map(w => (
+                                <option key={w.id} value={w.id}>{w.name} ({getServiceName(w.serviceType)})</option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Booking ID / Lead Reference"
+                              value={complaintBookingId}
+                              onChange={(e) => setComplaintBookingId(e.target.value)}
+                              className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                            />
+                          </div>
+                          <textarea
                             required
-                            value={complaintWorkerId}
-                            onChange={(e) => setComplaintWorkerId(e.target.value)}
-                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                            rows={4}
+                            placeholder="Evidence, customer feedback notes, and violation descriptions..."
+                            value={complaintNotes}
+                            onChange={(e) => setComplaintNotes(e.target.value)}
+                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm resize-none"
+                          />
+                          <div className="flex gap-4">
+                            <button type="submit" className="px-6 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-sm cursor-pointer">
+                              Log Complaint
+                            </button>
+                            <button type="button" onClick={() => setShowAddComplaint(false)} className="px-6 py-2.5 border border-border/85 rounded-xl text-sm font-semibold cursor-pointer">
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    {/* Filters Section */}
+                    <div className="bg-card border border-border/60 p-6 rounded-3xl shadow-sm space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {/* Status Filter */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</label>
+                          <select
+                            value={complaintStatusFilter}
+                            onChange={(e) => setComplaintStatusFilter(e.target.value)}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/80 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                           >
-                            <option value="">Select Service Partner</option>
-                            {workers.filter(w => w.status !== "removed").map(w => (
-                              <option key={w.id} value={w.id}>{w.name} ({getServiceName(w.serviceType)})</option>
+                            <option value="ALL">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="ignored">Ignored</option>
+                          </select>
+                        </div>
+
+                        {/* Category Filter */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</label>
+                          <select
+                            value={complaintCategoryFilter}
+                            onChange={(e) => setComplaintCategoryFilter(e.target.value)}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/80 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                          >
+                            <option value="ALL">All Categories</option>
+                            {services.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                           </select>
+                        </div>
+
+                        {/* Worker Filter */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Partner</label>
+                          <select
+                            value={complaintWorkerFilter}
+                            onChange={(e) => setComplaintWorkerFilter(e.target.value)}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/80 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                          >
+                            <option value="ALL">All Partners</option>
+                            {workers.map((w) => (
+                              <option key={w.id} value={w.id}>{w.name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Date Filter */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Date Range</label>
+                          <select
+                            value={complaintDateFilter}
+                            onChange={(e) => setComplaintDateFilter(e.target.value)}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/80 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                          >
+                            <option value="ALL">All Time</option>
+                            <option value="today">Last 24 Hours</option>
+                            <option value="week">Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                          </select>
+                        </div>
+
+                        {/* Search Booking ID */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Search ID</label>
                           <input
                             type="text"
-                            required
-                            placeholder="Booking ID / Lead Reference"
-                            value={complaintBookingId}
-                            onChange={(e) => setComplaintBookingId(e.target.value)}
-                            className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                            placeholder="Booking ID..."
+                            value={complaintSearchQuery}
+                            onChange={(e) => setComplaintSearchQuery(e.target.value)}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/80 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                           />
                         </div>
-                        <textarea
-                          required
-                          rows={4}
-                          placeholder="Evidence, customer feedback notes, and violation descriptions..."
-                          value={complaintNotes}
-                          onChange={(e) => setComplaintNotes(e.target.value)}
-                          className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm resize-none"
-                        />
-                        <div className="flex gap-4">
-                          <button type="submit" className="px-6 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-sm cursor-pointer">
-                            Log Complaint
-                          </button>
-                          <button type="button" onClick={() => setShowAddComplaint(false)} className="px-6 py-2.5 border border-border/85 rounded-xl text-sm font-semibold cursor-pointer">
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
+                      </div>
                     </div>
-                  )}
 
-                  <div className="bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left border-collapse">
-                        <thead className="bg-muted/40 text-xs font-bold uppercase text-muted-foreground border-b border-border/60">
-                          <tr>
-                            <th className="px-6 py-4">Worker Name</th>
-                            <th className="px-6 py-4">Booking ID</th>
-                            <th className="px-6 py-4">Description</th>
-                            <th className="px-6 py-4">Date Filed</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/60">
-                          {complaints.map((item) => (
-                            <tr key={item.id} className="hover:bg-muted/10 transition-colors">
-                              <td className="px-6 py-4 font-bold text-foreground">{item.workerName}</td>
-                              <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{item.bookingId}</td>
-                              <td className="px-6 py-4 text-muted-foreground leading-relaxed">{item.description}</td>
-                              <td className="px-6 py-4 text-xs text-muted-foreground">
-                                {new Date(item.createdAt?.seconds * 1000).toLocaleDateString()}
-                              </td>
-                            </tr>
-                          ))}
-                          {complaints.length === 0 && (
-                            <tr>
-                              <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                                No complaints filed! All partners are in good standing.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                    {/* Complaint Cards Grid */}
+                    <div className="space-y-4">
+                      {filteredComplaints.map((item) => {
+                        const status = item.status || "pending";
+                        const wStatus = workers.find(w => w.id === item.workerId)?.status || "active";
+                        const warningCount = (workers.find(w => w.id === item.workerId) as any)?.warningCount || 0;
+
+                        return (
+                          <div key={item.id} className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-6">
+                            <div className="flex flex-wrap justify-between items-start gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] uppercase font-bold tracking-widest text-primary">Complaint File</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                    status === "pending" ? "bg-rose-100 text-rose-700 animate-pulse" :
+                                    status === "resolved" ? "bg-emerald-100 text-emerald-800" :
+                                    "bg-slate-100 text-slate-700"
+                                  }`}>
+                                    {status}
+                                  </span>
+                                </div>
+                                <h3 className="font-black text-base text-foreground">{item.reason || "Internal Logged Violation"}</h3>
+                                <p className="text-xs text-muted-foreground font-mono">Booking ID: {item.bookingId}</p>
+                              </div>
+
+                              <div className="text-right text-xs text-muted-foreground">
+                                <p>Filed: {item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleString() : "Recently"}</p>
+                                {item.resolvedAt && (
+                                  <p className="text-emerald-600">Resolved: {new Date(item.resolvedAt.seconds * 1000).toLocaleDateString()}</p>
+                                )}
+                                {item.workerResponseTime && (
+                                  <p className="text-indigo-600">Worker response time: {item.workerResponseTime}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs border-t border-border/40 pt-4">
+                              {/* Left column: Customer Details */}
+                              <div className="space-y-2.5">
+                                <h4 className="font-bold text-foreground/80 uppercase tracking-wide text-[10px]">Customer Details</h4>
+                                <div className="space-y-1 text-muted-foreground">
+                                  <p><strong>Name:</strong> {item.customerName || "ServeGo Client"}</p>
+                                  <p><strong>Mobile:</strong> {item.customerMobile || "N/A"}</p>
+                                  <p><strong>Address:</strong> {item.customerAddress || "N/A"}</p>
+                                </div>
+                              </div>
+
+                              {/* Right column: Worker details */}
+                              <div className="space-y-2.5">
+                                <h4 className="font-bold text-foreground/80 uppercase tracking-wide text-[10px]">Assigned Worker Details</h4>
+                                <div className="space-y-1 text-muted-foreground">
+                                  <p><strong>Name:</strong> {item.workerName} (ID: {item.workerId?.substring(0, 8)}...)</p>
+                                  <p><strong>Mobile:</strong> {item.workerMobile || "N/A"}</p>
+                                  <p><strong>Category:</strong> {getServiceName(item.serviceType)}</p>
+                                  <p>
+                                    <strong>Worker Status: </strong>
+                                    <span className={`font-black uppercase ${wStatus === "active" ? "text-emerald-600" : "text-rose-600"}`}>
+                                      {wStatus}
+                                    </span>
+                                    {` (Warnings: ${warningCount})`}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Complaint photos & description */}
+                            <div className="space-y-3 bg-muted/20 p-4 rounded-2xl border border-dashed border-border">
+                              <p className="text-xs text-foreground font-semibold">Complaint Details & Evidence</p>
+                              <p className="text-xs text-muted-foreground leading-relaxed italic">"{item.description || "No text description details provided."}"</p>
+                              {item.photos && item.photos.length > 0 && (
+                                <div className="flex gap-2 flex-wrap pt-1">
+                                  {item.photos.map((p: string, idx: number) => (
+                                    <a key={idx} href={p} target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-xl overflow-hidden border border-border/80 hover:scale-105 transition-transform">
+                                      <img src={p} alt="" className="w-full h-full object-cover" />
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Admin Notes Section */}
+                            <div className="space-y-2.5">
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Admin Internal Notes</label>
+                              <div className="flex gap-2">
+                                <textarea
+                                  placeholder="Add details, notes, calls tracking description..."
+                                  value={tempAdminNotes[item.id] !== undefined ? tempAdminNotes[item.id] : item.adminNotes || ""}
+                                  onChange={(e) => setTempAdminNotes({ ...tempAdminNotes, [item.id]: e.target.value })}
+                                  className="flex-1 px-3 py-2 bg-muted/40 border border-border/80 rounded-xl text-xs focus:outline-none resize-none"
+                                  rows={1}
+                                />
+                                <button
+                                  onClick={() => handleUpdateComplaintNotes(item.id, tempAdminNotes[item.id] || "")}
+                                  className="px-4 py-2 bg-secondary border border-border/80 hover:bg-secondary/80 text-foreground font-bold rounded-xl text-xs cursor-pointer"
+                                >
+                                  Save Note
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Actions bar */}
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-border/40">
+                              {status === "pending" && (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdateComplaintStatus(item.id, "resolved")}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs cursor-pointer border-none"
+                                  >
+                                    Close & Resolve
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateComplaintStatus(item.id, "ignored")}
+                                    className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl text-xs cursor-pointer border-none"
+                                  >
+                                    Ignore Complaint
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => handleWarningWorker(item.workerId, item.workerName)}
+                                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs cursor-pointer border-none"
+                              >
+                                Warn Partner
+                              </button>
+                              {wStatus === "active" ? (
+                                <button
+                                  onClick={() => handleWorkerStatusChange(item.workerId, item.workerName, "suspended")}
+                                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs cursor-pointer border-none"
+                                >
+                                  Suspend Partner
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleWorkerStatusChange(item.workerId, item.workerName, "active")}
+                                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs cursor-pointer border-none"
+                                >
+                                  Reactivate Partner
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {filteredComplaints.length === 0 && (
+                        <div className="bg-card border border-border/60 p-8 rounded-3xl text-center text-muted-foreground text-sm font-semibold">
+                          No matching complaints found!
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Tab 5: Reviews */}
               {activeTab === "reviews" && (
@@ -3122,6 +3401,35 @@ export default function AdminDashboardPage() {
                           <span className="text-muted-foreground">Current Status:</span>
                           <span className={`font-bold px-2 py-0.5 rounded-full ${(toggles.customerReviewsEnabled ?? true) ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
                             {(toggles.customerReviewsEnabled ?? true) ? "VISIBLE ON WEBSITE" : "HIDDEN ON WEBSITE"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Complaint Window Toggle Card */}
+                      <div className="p-6 border border-border/60 rounded-2xl bg-muted/10 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                              <AlertTriangle className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-base">Complaint Window</h3>
+                              <p className="text-xs text-muted-foreground">Active customer complaint window (days)</p>
+                            </div>
+                          </div>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={toggles.complaintWindowDays ?? 5}
+                            onChange={(e) => handleToggleChange("complaintWindowDays", Math.min(10, Math.max(1, parseInt(e.target.value) || 5)))}
+                            className="w-16 px-3 py-1.5 bg-background border border-border/80 rounded-xl text-center text-sm font-bold focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+                          <span className="text-muted-foreground">Current Config:</span>
+                          <span className="font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                            {toggles.complaintWindowDays ?? 5} Days Period
                           </span>
                         </div>
                       </div>

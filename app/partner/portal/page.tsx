@@ -159,6 +159,9 @@ export default function PartnerPortalPage() {
     minMilestoneRating: 4.0
   });
 
+  const [pendingComplaints, setPendingComplaints] = useState<any[]>([]);
+  const [resolvingComplaint, setResolvingComplaint] = useState("");
+
   // Subscribe to Config Toggles
   useEffect(() => {
     const unsubToggles = onSnapshot(doc(db, "system_config", "toggles"), (docSnap) => {
@@ -458,6 +461,20 @@ export default function PartnerPortalPage() {
     };
   }, [partner]);
 
+  // Subscribe to pending customer complaints for this worker
+  useEffect(() => {
+    if (!partner?.id) return;
+    const q = query(
+      collection(db, "complaints"),
+      where("workerId", "==", partner.id),
+      where("status", "==", "pending")
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setPendingComplaints(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsub();
+  }, [partner?.id]);
+
   // Audio & Speech Voice Alert (Zero static assets required, maximum volume)
   const playAlertSound = (lead?: any) => {
     // 1. Speech synthesis - shouts "New Order! New Order!" and reads details
@@ -681,6 +698,27 @@ export default function PartnerPortalPage() {
     }
   };
 
+  const handleResolveComplaint = async (complaintId: string) => {
+    setResolvingComplaint(complaintId);
+    try {
+      const ref = doc(db, "complaints", complaintId);
+      const complaint = pendingComplaints.find(c => c.id === complaintId);
+      const createdAt = complaint?.createdAt?.seconds ? complaint.createdAt.seconds * 1000 : Date.now();
+      const responseTimeMs = Date.now() - createdAt;
+      const responseTimeHours = Math.round(responseTimeMs / (1000 * 60 * 60) * 10) / 10;
+      
+      await updateDoc(ref, {
+        status: "resolved",
+        resolvedAt: serverTimestamp(),
+        workerResponseTime: `${responseTimeHours} hours`
+      });
+    } catch (err: any) {
+      alert("Failed to resolve: " + err.message);
+    } finally {
+      setResolvingComplaint("");
+    }
+  };
+
   // Logout utility
   const handleLogout = () => {
     localStorage.removeItem("partner_profile");
@@ -765,6 +803,76 @@ export default function PartnerPortalPage() {
             </div>
           </div>
         </div>
+
+        {/* Customer Complaints Alert */}
+        {pendingComplaints.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-black uppercase tracking-wider text-rose-600 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 animate-pulse" /> Customer Complaints ({pendingComplaints.length})
+            </h3>
+            {pendingComplaints.map((complaint) => (
+              <div key={complaint.id} className="bg-rose-50 border border-rose-200 p-5 rounded-2xl space-y-4 animate-in fade-in">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <span className="text-[9px] uppercase font-black tracking-widest text-rose-400">Complaint</span>
+                    <h4 className="font-black text-sm text-rose-800">{complaint.reason}</h4>
+                    <p className="text-[10px] text-rose-600">Booking: {complaint.bookingId?.substring(0, 10)}</p>
+                  </div>
+                  <span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[9px] font-black rounded-full uppercase animate-pulse">Pending</span>
+                </div>
+
+                {complaint.description && (
+                  <p className="text-xs text-rose-700 bg-rose-100/50 p-3 rounded-xl italic">"{complaint.description}"</p>
+                )}
+
+                {complaint.photos && complaint.photos.length > 0 && (
+                  <div className="flex gap-2">
+                    {complaint.photos.map((photo: string, i: number) => (
+                      <div key={i} className="w-16 h-16 rounded-xl overflow-hidden border border-rose-200">
+                        <img src={photo} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="text-xs text-rose-700 space-y-1">
+                  <p><strong>Customer:</strong> {complaint.customerName}</p>
+                  <p><strong>Mobile:</strong> {complaint.customerMobile}</p>
+                  <p><strong>Service:</strong> {complaint.serviceType}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <a
+                    href={`tel:${complaint.customerMobile}`}
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-rose-200 hover:bg-rose-50 text-rose-700 font-bold rounded-xl text-xs cursor-pointer transition-colors"
+                  >
+                    📞 Call Customer
+                  </a>
+                  <a
+                    href={`https://wa.me/91${complaint.customerMobile}?text=Hi%20${encodeURIComponent(complaint.customerName)},%20I%20am%20contacting%20you%20regarding%20your%20complaint%20on%20ServeGo%20booking%20${complaint.bookingId?.substring(0,8)}.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs cursor-pointer transition-colors"
+                  >
+                    💬 WhatsApp Customer
+                  </a>
+                </div>
+
+                <button
+                  onClick={() => handleResolveComplaint(complaint.id)}
+                  disabled={resolvingComplaint === complaint.id}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl cursor-pointer border-none disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {resolvingComplaint === complaint.id ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>✅ Complaint Resolved</span>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Active Job State */}
         {activeLead ? (
