@@ -3,10 +3,7 @@
 import React, { useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Send, CheckCircle, AlertCircle, Phone, Mail, MapPin } from "lucide-react";
+import { Send, CheckCircle, AlertCircle, Mail, MapPin } from "lucide-react";
 
 export default function ContactForm() {
   const [name, setName] = useState("");
@@ -21,7 +18,7 @@ export default function ContactForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !mobile || !subject || !message) {
+    if (!name.trim() || !email.trim() || !mobile.trim() || !subject.trim() || !message.trim()) {
       setError("Please fill out all the fields.");
       return;
     }
@@ -31,11 +28,11 @@ export default function ContactForm() {
 
     try {
       await addDoc(collection(db, "contacts"), {
-        name,
-        email,
-        mobile,
-        subject,
-        message,
+        name: name.trim(),
+        email: email.trim(),
+        mobile: mobile.trim(),
+        subject: subject.trim(),
+        message: message.trim(),
         createdAt: serverTimestamp(),
       });
       setSuccess(true);
@@ -81,21 +78,6 @@ export default function ContactForm() {
 
             <div className="flex gap-4 items-start">
               <div className="p-3 bg-primary/10 rounded-xl text-primary shrink-0">
-                <Phone className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="font-bold text-foreground text-sm">Call Center Helpline</h4>
-                <p className="text-muted-foreground text-sm font-medium">
-                  +91 80000 12345
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Monday – Sunday, 7:00 AM – 9:00 PM IST
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 items-start">
-              <div className="p-3 bg-primary/10 rounded-xl text-primary shrink-0">
                 <MapPin className="w-6 h-6" />
               </div>
               <div>
@@ -127,13 +109,12 @@ export default function ContactForm() {
                   Your message has been sent successfully. Our support desk will reach out shortly.
                 </p>
               </div>
-              <Button 
-                variant="outline"
+              <button 
                 onClick={() => setSuccess(false)}
-                className="mt-2"
+                className="mt-2 px-5 py-2.5 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl cursor-pointer border border-border"
               >
                 Send Another Message
-              </Button>
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,85 +127,86 @@ export default function ContactForm() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="name" className="text-sm font-bold text-foreground">
-                    Your Name
+                  <label htmlFor="name" className="text-xs font-bold text-foreground/80">
+                    Your Name *
                   </label>
-                  <Input 
+                  <input 
                     type="text" 
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Rahul Sharma"
-                    className="h-10 border-border/80 focus:border-primary"
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/45 text-foreground placeholder-muted-foreground/60 focus:bg-background transition-all"
                     required
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="mobile" className="text-sm font-bold text-foreground">
-                    Mobile Number
+                  <label htmlFor="mobile" className="text-xs font-bold text-foreground/80">
+                    Mobile Number *
                   </label>
-                  <Input 
+                  <input 
                     type="tel" 
                     id="mobile"
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
-                    placeholder="e.g. +91 98765 43210"
-                    className="h-10 border-border/80 focus:border-primary"
+                    placeholder="e.g. 9876543210"
+                    maxLength={10}
+                    className="w-full px-4 py-2.5 bg-muted/40 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/45 text-foreground placeholder-muted-foreground/60 focus:bg-background transition-all"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="email" className="text-sm font-bold text-foreground">
-                  Email Address
+                <label htmlFor="email" className="text-xs font-bold text-foreground/80">
+                  Email Address *
                 </label>
-                <Input 
+                <input 
                   type="email" 
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. rahul@example.com"
-                  className="h-10 border-border/80 focus:border-primary"
+                  className="w-full px-4 py-2.5 bg-muted/40 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/45 text-foreground placeholder-muted-foreground/60 focus:bg-background transition-all"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="subject" className="text-sm font-bold text-foreground">
-                  Subject
+                <label htmlFor="subject" className="text-xs font-bold text-foreground/80">
+                  Subject *
                 </label>
-                <Input 
+                <input 
                   type="text" 
                   id="subject"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g. Booking delay or Partner Registration Query"
-                  className="h-10 border-border/80 focus:border-primary"
+                  placeholder="e.g. Booking Delay or Registration Issue"
+                  className="w-full px-4 py-2.5 bg-muted/40 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/45 text-foreground placeholder-muted-foreground/60 focus:bg-background transition-all"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="message" className="text-sm font-bold text-foreground">
-                  Message Description
+                <label htmlFor="message" className="text-xs font-bold text-foreground/80">
+                  Message Description *
                 </label>
-                <Textarea 
+                <textarea 
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Tell us what you need help with..."
+                  placeholder="Tell us what you need help with in detail..."
                   rows={4}
-                  className="border-border/80 focus:border-primary min-h-[120px]"
+                  className="w-full px-4 py-2.5 bg-muted/40 border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/45 text-foreground placeholder-muted-foreground/60 focus:bg-background transition-all resize-none min-h-[120px]"
                   required
                 />
               </div>
 
-              <Button 
+              <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full h-11 bg-primary text-primary-foreground font-semibold hover:opacity-95 active:scale-98 transition-all shadow-md shadow-primary/20 flex justify-center items-center gap-2 cursor-pointer mt-4"
+                className="w-full py-3.5 bg-primary text-primary-foreground font-black text-sm rounded-xl shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer btn-press border-none mt-4"
               >
                 {loading ? "Sending..." : (
                   <>
@@ -232,7 +214,7 @@ export default function ContactForm() {
                     <Send className="w-4 h-4" />
                   </>
                 )}
-              </Button>
+              </button>
             </form>
           )}
         </div>
