@@ -117,7 +117,8 @@ export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [toggles, setToggles] = useState<any>({
     localPartnerServicesEnabled: false,
-    vehicleRentalEnabled: false
+    vehicleRentalEnabled: false,
+    customerReviewsEnabled: true
   });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -956,7 +957,7 @@ export default function Home() {
                 Start Earning with ServeGo Today
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Connect with thousands of customers seeking reliable experts in Ranchi, Patna, Delhi and more. Get verified and access live, direct dispatch dispatches.
+                Connect with thousands of customers seeking reliable experts in Aurangabad. Get verified and access live, direct dispatch dispatches.
               </p>
             </div>
 
@@ -972,183 +973,99 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Top Professionals of Aurangabad Showcase Section */}
-      {(() => {
-        const activeProfs = [
-          { role: "Top Electrician", key: "electrician", iconName: "electrical" },
-          { role: "Top Plumber", key: "plumber", iconName: "plumbing" },
-          { role: "Top Carpenter", key: "carpenter", iconName: "carpentry" },
-          { role: "Top AC Technician", key: "ac", iconName: "ac" }
-        ].filter(prof => !!topProfessionals[prof.key]);
-
-        if (activeProfs.length === 0) return null;
-
-        return (
-          <section className="py-24 bg-card/40 border-t border-border/50 scroll-mt-6">
-            <div className="max-w-7xl mx-auto px-6">
-              <div className="text-center space-y-4 mb-16">
-                <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full flex items-center gap-1.5 justify-center w-fit mx-auto">
-                  <UserCheck className="w-4 h-4" /> Top Performers
-                </span>
-                <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-                  Top Professionals of Aurangabad
-                </h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                  Meet our highest-performing and background-verified local service experts of the month.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {activeProfs.map((prof, idx) => {
-                  const worker = topProfessionals[prof.key];
-                  const name = worker.name;
-                  const rating = worker.rating?.toFixed(1) || "5.0";
-                  const completedJobs = worker.totalCompletedJobs || 0;
-                  const photo = worker.imageUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
-
-                  return (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, y: 15 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: idx * 0.05, duration: 0.4 }}
-                      className="bg-card border border-border/70 p-6 rounded-3xl shadow-lg relative overflow-hidden backdrop-blur-md flex flex-col items-center text-center space-y-4 transition-all hover:border-primary/40 hover:shadow-xl"
-                    >
-                      {/* Verified badge top-right */}
-                      <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-500 p-1.5 rounded-full" title="Verified Professional">
-                        <ShieldCheck className="w-5 h-5" />
-                      </div>
-
-                      {/* Photo with glowing ring */}
-                      <div className="relative">
-                        <div className="w-20 h-20 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center">
-                          <img src={photo} alt={name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-1 rounded-full text-xs">
-                          <ServiceIcon name={prof.iconName} className="w-4 h-4" />
-                        </div>
-                      </div>
-
-                      {/* Details */}
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-black uppercase text-primary tracking-widest block">
-                          {prof.role}
-                        </span>
-                        <h3 className="font-extrabold text-base text-foreground leading-snug">{name}</h3>
-                      </div>
-
-                      {/* Ratings & Jobs */}
-                      <div className="flex items-center gap-4 bg-muted/40 px-4 py-2 rounded-2xl w-full justify-center text-xs">
-                        <div className="flex items-center gap-1 font-bold text-foreground">
-                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                          <span>{rating}</span>
-                        </div>
-                        <div className="h-3 w-[1px] bg-border" />
-                        <div className="text-muted-foreground font-medium">
-                          <strong>{completedJobs}</strong> Jobs Completed
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        );
-      })()}
-
       {/* Testimonials Carousel Section */}
-      <section className="py-24 px-6 max-w-5xl mx-auto scroll-mt-6 border-t border-border/40" id="reviews">
-        <div className="text-center space-y-4 mb-16">
-          <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full flex items-center gap-1.5 justify-center w-fit mx-auto">
-            <MessageSquare className="w-4 h-4" /> Customer Testimonials
-          </span>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-            Loved by Aurangabad Residents
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            See how customers and local professionals coordinate successfully on ServeGo.
-          </p>
-        </div>
-
-        <div className="relative bg-card border border-border/60 p-8 md:p-12 rounded-3xl shadow-xl overflow-hidden max-w-3xl mx-auto flex flex-col items-center">
-          <div className="flex items-center gap-1 mb-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                className={`w-6 h-6 ${
-                  i < TESTIMONIALS[currentReviewIdx].rating
-                    ? "fill-primary text-primary"
-                    : "text-muted-foreground/30"
-                }`}
-              />
-            ))}
+      {toggles.customerReviewsEnabled && (
+        <section className="py-24 px-6 max-w-5xl mx-auto scroll-mt-6 border-t border-border/40" id="reviews">
+          <div className="text-center space-y-4 mb-16">
+            <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full flex items-center gap-1.5 justify-center w-fit mx-auto">
+              <MessageSquare className="w-4 h-4" /> Customer Testimonials
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">
+              Loved by Aurangabad Residents
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              See how customers and local professionals coordinate successfully on ServeGo.
+            </p>
           </div>
 
-          <motion.div
-            key={currentReviewIdx}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="text-center space-y-6"
-          >
-            <p className="text-lg md:text-xl font-medium leading-relaxed italic text-foreground px-4">
-              "{TESTIMONIALS[currentReviewIdx].text}"
-            </p>
-
-            <div className="space-y-1">
-              <h4 className="font-black text-base text-foreground flex items-center justify-center gap-1.5">
-                {TESTIMONIALS[currentReviewIdx].name}
-                <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> Verified User
-                </span>
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                {TESTIMONIALS[currentReviewIdx].service} • {TESTIMONIALS[currentReviewIdx].area}
-              </p>
-            </div>
-          </motion.div>
-
-          <div className="flex items-center gap-4 mt-8 pt-4 border-t border-border/40 w-full justify-center">
-            <button
-              onClick={() =>
-                setCurrentReviewIdx(
-                  (prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length
-                )
-              }
-              className="p-3 bg-secondary text-foreground hover:bg-secondary/80 rounded-full border border-border/40 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
-              aria-label="Previous Review"
-            >
-              <ChevronLeft className="w-5 h-5 text-primary" />
-            </button>
-            
-            <div className="flex gap-1.5">
-              {TESTIMONIALS.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentReviewIdx(idx)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                    idx === currentReviewIdx ? "bg-primary w-6" : "bg-muted-foreground/30"
+          <div className="relative bg-card border border-border/60 p-8 md:p-12 rounded-3xl shadow-xl overflow-hidden max-w-3xl mx-auto flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-6">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-6 h-6 ${
+                    i < TESTIMONIALS[currentReviewIdx].rating
+                      ? "fill-primary text-primary"
+                      : "text-muted-foreground/30"
                   }`}
-                  aria-label={`Go to slide ${idx + 1}`}
                 />
               ))}
             </div>
 
-            <button
-              onClick={() =>
-                setCurrentReviewIdx((prev) => (prev + 1) % TESTIMONIALS.length)
-              }
-              className="p-3 bg-secondary text-foreground hover:bg-secondary/80 rounded-full border border-border/40 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
-              aria-label="Next Review"
+            <motion.div
+              key={currentReviewIdx}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="text-center space-y-6"
             >
-              <ChevronRight className="w-5 h-5 text-primary" />
-            </button>
+              <p className="text-lg md:text-xl font-medium leading-relaxed italic text-foreground px-4">
+                "{TESTIMONIALS[currentReviewIdx].text}"
+              </p>
+
+              <div className="space-y-1">
+                <h4 className="font-black text-base text-foreground flex items-center justify-center gap-1.5">
+                  {TESTIMONIALS[currentReviewIdx].name}
+                  <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> Verified User
+                  </span>
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  {TESTIMONIALS[currentReviewIdx].service} • {TESTIMONIALS[currentReviewIdx].area}
+                </p>
+              </div>
+            </motion.div>
+
+            <div className="flex items-center gap-4 mt-8 pt-4 border-t border-border/40 w-full justify-center">
+              <button
+                onClick={() =>
+                  setCurrentReviewIdx(
+                    (prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length
+                  )
+                }
+                className="p-3 bg-secondary text-foreground hover:bg-secondary/80 rounded-full border border-border/40 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                aria-label="Previous Review"
+              >
+                <ChevronLeft className="w-5 h-5 text-primary" />
+              </button>
+              
+              <div className="flex gap-1.5">
+                {TESTIMONIALS.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentReviewIdx(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                      idx === currentReviewIdx ? "bg-primary w-6" : "bg-muted-foreground/30"
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() =>
+                  setCurrentReviewIdx((prev) => (prev + 1) % TESTIMONIALS.length)
+                }
+                className="p-3 bg-secondary text-foreground hover:bg-secondary/80 rounded-full border border-border/40 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                aria-label="Next Review"
+              >
+                <ChevronRight className="w-5 h-5 text-primary" />
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* FAQ Section */}
       <section className="py-24 px-6 max-w-3xl mx-auto scroll-mt-6" id="faq">

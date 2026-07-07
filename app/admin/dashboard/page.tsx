@@ -146,6 +146,7 @@ export default function AdminDashboardPage() {
   const [toggles, setToggles] = useState<any>({
     localPartnerServicesEnabled: false,
     vehicleRentalEnabled: false,
+    customerReviewsEnabled: true,
     websiteStatus: "LIVE",
     launchDate: "2026-08-16T00:00:00",
     launchMessage: "We are launching very soon in your area. Register early to claim exclusive benefits.",
@@ -363,7 +364,8 @@ export default function AdminDashboardPage() {
             } else {
               setDoc(doc(db, "system_config", "toggles"), {
                 localPartnerServicesEnabled: false,
-                vehicleRentalEnabled: false
+                vehicleRentalEnabled: false,
+                customerReviewsEnabled: true
               });
             }
           },
@@ -3294,7 +3296,7 @@ export default function AdminDashboardPage() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                       {/* Local Quick Delivery and Shops Toggle */}
                       <div className="p-6 border border-border/60 rounded-2xl bg-muted/10 space-y-4">
                         <div className="flex justify-between items-center">
@@ -3304,7 +3306,7 @@ export default function AdminDashboardPage() {
                             </div>
                             <div>
                               <h3 className="font-bold text-base">Local Partner Shops</h3>
-                              <p className="text-xs text-muted-foreground">Medical, Grocery, Restaurants, Building, Centring, Hardware</p>
+                              <p className="text-xs text-muted-foreground">Medical, Grocery, Centring, Hardware</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -3334,7 +3336,7 @@ export default function AdminDashboardPage() {
                             </div>
                             <div>
                               <h3 className="font-bold text-base">Vehicle Rental Services</h3>
-                              <p className="text-xs text-muted-foreground">Sedan, SUV, Hatchback, Pickup, Mini Truck</p>
+                              <p className="text-xs text-muted-foreground">Sedan, SUV, Hatchback, Pickup</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -3351,6 +3353,36 @@ export default function AdminDashboardPage() {
                           <span className="text-muted-foreground">Current Status:</span>
                           <span className={`font-bold px-2 py-0.5 rounded-full ${toggles.vehicleRentalEnabled ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
                             {toggles.vehicleRentalEnabled ? "ACTIVE (Live for Booking)" : "COMING SOON (Capture Mode)"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Customer Reviews Toggle */}
+                      <div className="p-6 border border-border/60 rounded-2xl bg-muted/10 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                              <MessageSquare className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-base">Reviews Showcase</h3>
+                              <p className="text-xs text-muted-foreground">Toggle customer reviews visibility on main page</p>
+                            </div>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={toggles.customerReviewsEnabled ?? true}
+                              onChange={(e) => handleToggleChange("customerReviewsEnabled", e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-muted border border-border/60 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+                          <span className="text-muted-foreground">Current Status:</span>
+                          <span className={`font-bold px-2 py-0.5 rounded-full ${(toggles.customerReviewsEnabled ?? true) ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                            {(toggles.customerReviewsEnabled ?? true) ? "VISIBLE ON WEBSITE" : "HIDDEN ON WEBSITE"}
                           </span>
                         </div>
                       </div>
