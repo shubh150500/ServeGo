@@ -27,7 +27,9 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  MessageSquare
+  MessageSquare,
+  Lock,
+  ArrowRight
 } from "lucide-react";
 
 const TESTIMONIALS = [
@@ -768,13 +770,13 @@ export default function Home() {
               },
               {
                 step: "02",
-                title: "Worker Assignment",
-                desc: "Our admin assigns the top-ranked available worker in your area."
+                title: "Instant Dispatch",
+                desc: "Our system instantly dispatches the booking request to qualified partners in your area."
               },
               {
                 step: "03",
-                title: "Direct WhatsApp link",
-                desc: "Worker receives job info on WhatsApp, accepts, and coordinates with you."
+                title: "Partner Acceptance",
+                desc: "The nearest service partner accepts your job digitally through their portal and contacts you directly."
               },
               {
                 step: "04",
@@ -868,108 +870,34 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="bg-background border border-border/80 p-5 md:p-12 rounded-3xl shadow-xl">
-            {success ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-6 py-12"
+          <div className="bg-card border border-border/80 p-8 md:p-12 rounded-3xl shadow-xl text-center space-y-8 max-w-2xl mx-auto relative overflow-hidden backdrop-blur-md">
+            {/* Background design accents */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -z-10" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -z-10" />
+            
+            <div className="space-y-4 max-w-md mx-auto">
+              <h3 className="text-2xl font-extrabold tracking-tight text-foreground">
+                Start Earning with ServeGo Today
+              </h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Connect with thousands of customers seeking reliable experts in Ranchi, Patna, Delhi and more. Get verified and access live, direct dispatch dispatches.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link
+                href="/partner/register"
+                className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground font-black rounded-2xl hover:bg-primary/90 hover:scale-[1.02] shadow-lg hover:shadow-primary/25 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer btn-press border-none text-sm"
               >
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
-                  <UserCheck className="w-10 h-10" />
-                </div>
-                <h3 className="text-3xl font-black">Registration Successful!</h3>
-                <p className="text-muted-foreground text-lg">
-                  Thank you for joining. Our platform administrators will review your profile and activate your account. You will start receiving assignments shortly.
-                </p>
-                <button
-                  onClick={() => setSuccess(false)}
-                  className="mt-6 px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-xl"
-                >
-                  Register Another Profile
-                </button>
-              </motion.div>
-            ) : (
-              <form onSubmit={handleRegisterWorker} className="space-y-6">
-                {error && (
-                  <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl text-sm font-medium">
-                    {error}
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Full Name</label>
-                    <input
-                      type="text"
-                      value={workerName}
-                      onChange={(e) => setWorkerName(e.target.value)}
-                      placeholder="e.g. Ramesh Kumar"
-                      className="w-full px-4 py-3 bg-muted/50 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Mobile Number (WhatsApp Enabled)</label>
-                    <input
-                      type="tel"
-                      value={workerMobile}
-                      onChange={(e) => setWorkerMobile(e.target.value)}
-                      placeholder="e.g. +91 9876543210"
-                      className="w-full px-4 py-3 bg-muted/50 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Skill Category</label>
-                    <select
-                      value={workerService}
-                      onChange={(e) => setWorkerService(e.target.value)}
-                      className="w-full px-4 py-3 bg-muted/50 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45"
-                    >
-                      <option value="">Select Category</option>
-                      {(services.length > 0 ? services : SERVICES_LIST).map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Service Area / City Sector</label>
-                    <input
-                      type="text"
-                      value={workerArea}
-                      onChange={(e) => setWorkerArea(e.target.value)}
-                      placeholder="e.g. Sector 62, Indirapuram"
-                      className="w-full px-4 py-3 bg-muted/50 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80">Experience (Years)</label>
-                    <input
-                      type="number"
-                      value={workerExp}
-                      onChange={(e) => setWorkerExp(e.target.value)}
-                      placeholder="e.g. 5"
-                      min="1"
-                      className="w-full px-4 py-3 bg-muted/50 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-primary text-primary-foreground font-bold text-lg rounded-xl hover:bg-primary/95 shadow-lg transition-all duration-300 disabled:opacity-50 cursor-pointer"
-                >
-                  {loading ? "Registering Profile..." : "Submit Application"}
-                </button>
-              </form>
-            )}
+                Register as Partner <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/partner/login"
+                className="w-full sm:w-auto px-8 py-4 bg-muted/60 hover:bg-muted text-foreground font-black rounded-2xl hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border border-border/80 text-sm"
+              >
+                Access Partner Portal <Lock className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
