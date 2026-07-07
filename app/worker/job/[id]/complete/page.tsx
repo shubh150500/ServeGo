@@ -157,6 +157,11 @@ export default function WorkerCompleteJobPage({ params }: PageProps) {
         }
 
         const currentCompleted = wSnap.data().totalCompletedJobs || 0;
+        const wData = wSnap.data() || {};
+        const currentMilestoneJobs = wData.milestoneCompletedJobs || 0;
+        const currentMilestoneStatus = wData.milestoneStatus || "in_progress";
+        const currentMilestoneTarget = wData.currentMilestone || 100;
+        const currentRating = wData.rating || 5.0;
 
         transaction.update(bookingRef, {
           status: "COMPLETED",
@@ -164,10 +169,21 @@ export default function WorkerCompleteJobPage({ params }: PageProps) {
           updatedAt: serverTimestamp(),
         });
 
-        transaction.update(workerRef, {
+        let workerUpdates: any = {
           totalCompletedJobs: currentCompleted + 1,
           lastActivity: serverTimestamp(),
-        });
+        };
+
+        if (currentMilestoneStatus === "in_progress") {
+          const nextCompletedCount = currentMilestoneJobs + 1;
+          workerUpdates.milestoneCompletedJobs = nextCompletedCount;
+          if (nextCompletedCount >= currentMilestoneTarget && currentRating >= 4.0) {
+            workerUpdates.milestoneStatus = "pending_review";
+            workerUpdates.milestoneAchievedAt = serverTimestamp();
+          }
+        }
+
+        transaction.update(workerRef, workerUpdates);
       });
 
       // Fire confetti celebration!

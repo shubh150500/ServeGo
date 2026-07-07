@@ -142,6 +142,120 @@ export default function PartnerPortalPage() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
+  // Milestone Rewards States
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "bank">("upi");
+  
+  // Withdrawal Form States
+  const [upiId, setUpiId] = useState("");
+  const [bankHolderName, setBankHolderName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankIfsc, setBankIfsc] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [submittingWithdrawal, setSubmittingWithdrawal] = useState(false);
+
+  const [toggles, setToggles] = useState<any>({
+    minMilestoneRating: 4.0
+  });
+
+  // Subscribe to Config Toggles
+  useEffect(() => {
+    const unsubToggles = onSnapshot(doc(db, "system_config", "toggles"), (docSnap) => {
+      if (docSnap.exists()) {
+        setToggles(docSnap.data());
+      }
+    });
+    return () => unsubToggles();
+  }, []);
+
+  // Auto-trigger pending review celebration
+  useEffect(() => {
+    if (!partnerDetails) return;
+    const comp = partnerDetails.milestoneCompletedJobs || 0;
+    const target = partnerDetails.currentMilestone || 100;
+    const rat = partnerDetails.rating || 5.0;
+    const status = partnerDetails.milestoneStatus || "in_progress";
+    const minRat = toggles?.minMilestoneRating ?? 4.0;
+
+    if (comp >= target && rat >= minRat && status === "in_progress") {
+      const ref = doc(db, "workers", partnerDetails.id);
+      updateDoc(ref, {
+        milestoneStatus: "pending_review",
+        milestoneAchievedAt: serverTimestamp()
+      }).then(() => {
+        setShowCelebrationModal(true);
+      });
+    }
+  }, [partnerDetails?.milestoneCompletedJobs, partnerDetails?.rating, partnerDetails?.milestoneStatus, toggles?.minMilestoneRating]);
+
+  const handleSubmitWithdrawal = async () => {
+    if (!partner?.id) return;
+    setSubmittingWithdrawal(true);
+    try {
+      const payload: any = { method: paymentMethod };
+      if (paymentMethod === "upi") {
+        if (!upiId.trim()) throw new Error("Please enter your UPI ID.");
+        payload.upiId = upiId.trim();
+      } else {
+        if (!bankHolderName.trim() || !bankAccountNumber.trim() || !bankIfsc.trim() || !bankName.trim()) {
+          throw new Error("Please fill out all bank account fields.");
+        }
+        payload.holderName = bankHolderName.trim();
+        payload.accountNumber = bankAccountNumber.trim();
+        payload.ifsc = bankIfsc.trim();
+        payload.bankName = bankName.trim();
+      }
+
+      const ref = doc(db, "workers", partner.id);
+      await updateDoc(ref, {
+        milestoneStatus: "withdrawal_requested",
+        milestoneWithdrawalDetails: payload,
+        updatedAt: serverTimestamp()
+      });
+      setShowWithdrawModal(false);
+    } catch (err: any) {
+      alert(err.message || "Failed to submit withdrawal request.");
+    } finally {
+      setSubmittingWithdrawal(false);
+    }
+  };
+
+  const handleUnlockNextMilestone = async () => {
+    if (!partner?.id || !partnerDetails) return;
+    try {
+      const ref = doc(db, "workers", partner.id);
+      const currentTarget = partnerDetails.currentMilestone || 100;
+      const payDetails = partnerDetails.milestonePaymentDetails || {};
+      
+      const newHistoryItem = {
+        milestone: currentTarget,
+        unlockedDate: partnerDetails.milestoneAchievedAt || new Date(),
+        approvedDate: partnerDetails.milestoneApprovedAt || new Date(),
+        paidAt: payDetails.paidAt || new Date(),
+        status: "paid"
+      };
+
+      const existingHistory = partnerDetails.milestoneHistory || [];
+      const updatedHistory = [...existingHistory, newHistoryItem];
+
+      await updateDoc(ref, {
+        currentMilestone: currentTarget + 100,
+        milestoneCompletedJobs: 0,
+        milestoneStatus: "in_progress",
+        milestoneHistory: updatedHistory,
+        milestoneBonusAmount: null,
+        milestoneWithdrawalDetails: null,
+        milestonePaymentDetails: null,
+        milestoneAchievedAt: null,
+        milestoneApprovedAt: null,
+        updatedAt: serverTimestamp()
+      });
+    } catch (err: any) {
+      alert("Error unlocking next milestone: " + err.message);
+    }
+  };
+
   // Track already notified lead IDs to avoid repeated triggers on update
   const notifiedLeads = useRef<Set<string>>(new Set());
 
@@ -530,11 +644,28 @@ export default function PartnerPortalPage() {
           updatedAt: serverTimestamp(),
         });
 
-        const currentCompleted = partnerSnap.exists() ? (partnerSnap.data()?.totalCompletedJobs || 0) : 0;
-        transaction.update(partnerRef, {
+        const pData = partnerSnap.exists() ? partnerSnap.data() : {};
+        const currentCompleted = pData?.totalCompletedJobs || 0;
+        const currentMilestoneJobs = pData?.milestoneCompletedJobs || 0;
+        const currentMilestoneStatus = pData?.milestoneStatus || "in_progress";
+        const currentMilestoneTarget = pData?.currentMilestone || 100;
+        const currentRating = pData?.rating || 5.0;
+
+        let partnerUpdates: any = {
           totalCompletedJobs: currentCompleted + 1,
           lastActivity: serverTimestamp(),
-        });
+        };
+
+        if (currentMilestoneStatus === "in_progress") {
+          const nextCompletedCount = currentMilestoneJobs + 1;
+          partnerUpdates.milestoneCompletedJobs = nextCompletedCount;
+          if (nextCompletedCount >= currentMilestoneTarget && currentRating >= 4.0) {
+            partnerUpdates.milestoneStatus = "pending_review";
+            partnerUpdates.milestoneAchievedAt = serverTimestamp();
+          }
+        }
+
+        transaction.update(partnerRef, partnerUpdates);
       });
 
       // Clear Modal states and active lead locally
@@ -777,208 +908,182 @@ export default function PartnerPortalPage() {
           const warnings = partnerDetails?.warningCount || 0;
 
           // Backend algorithmic logic executed client-side for private display representation
-          const computedScore = Math.min(1000, Math.max(0, Math.round(
-            (rating * 100) + 
-            (completedJobs * 10) + 
-            (acceptanceRate * 2) - 
-            (complaints * 50) - 
-            (warnings * 100)
-          )));
-
-          // Badge System calculations and styles
-          let badge = "Bronze";
-          let nextBadge = "Silver";
-          let badgeThreshold = 300;
-          let prevThreshold = 0;
-
-          let badgeStyles = {
-            bg: "bg-gradient-to-br from-amber-500 to-orange-700 text-white",
-            text: "text-amber-600",
-            label: "Bronze Quality Tier",
-            iconColor: "text-orange-200",
-            progressColor: "bg-orange-500"
+          const currentMilestone = partnerDetails?.currentMilestone || 100;
+          const milestoneCompletedJobs = partnerDetails?.milestoneCompletedJobs || 0;
+          const milestoneStatus = partnerDetails?.milestoneStatus || "in_progress";
+          const minMilestoneRating = toggles?.minMilestoneRating ?? 4.0;
+          
+          const progressPct = Math.min(100, (milestoneCompletedJobs / currentMilestone) * 100);
+          const jobsRemaining = Math.max(0, currentMilestone - milestoneCompletedJobs);
+          
+          // Milestone Status Text helper
+          const getStatusBadge = (status: string) => {
+            switch (status) {
+              case "in_progress":
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">In Progress</span>;
+              case "pending_review":
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full border border-yellow-100 animate-pulse">Pending Review</span>;
+              case "approved":
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100">Approved</span>;
+              case "withdrawal_requested":
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-purple-50 text-purple-600 px-3 py-1 rounded-full border border-purple-100">Withdrawal Requested</span>;
+              case "payment_processing":
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-amber-50 text-amber-600 px-3 py-1 rounded-full border border-amber-100">Processing</span>;
+              case "paid":
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-emerald-500 text-white px-3 py-1 rounded-full">Paid</span>;
+              case "rejected":
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-rose-50 text-rose-600 px-3 py-1 rounded-full border border-rose-100">Rejected</span>;
+              default:
+                return <span className="text-[10px] uppercase font-black tracking-widest bg-slate-50 text-slate-600 px-3 py-1 rounded-full">Unknown</span>;
+            }
           };
 
-          if (computedScore <= 300) {
-            badge = "Bronze";
-            nextBadge = "Silver";
-            badgeThreshold = 300;
-            prevThreshold = 0;
-            badgeStyles = {
-              bg: "bg-gradient-to-br from-amber-600 to-amber-800 text-white",
-              text: "text-amber-700",
-              label: "Bronze Quality Tier",
-              iconColor: "text-amber-300",
-              progressColor: "bg-amber-500"
-            };
-          } else if (computedScore <= 600) {
-            badge = "Silver";
-            nextBadge = "Gold";
-            badgeThreshold = 600;
-            prevThreshold = 300;
-            badgeStyles = {
-              bg: "bg-gradient-to-br from-slate-400 via-slate-350 to-slate-600 text-white shadow-lg shadow-slate-100",
-              text: "text-slate-600",
-              label: "Silver Quality Tier",
-              iconColor: "text-slate-200",
-              progressColor: "bg-slate-400"
-            };
-          } else if (computedScore <= 800) {
-            badge = "Gold";
-            nextBadge = "Elite";
-            badgeThreshold = 800;
-            prevThreshold = 600;
-            badgeStyles = {
-              bg: "bg-gradient-to-br from-yellow-400 via-amber-400 to-amber-600 text-slate-950 shadow-lg shadow-amber-100 border border-amber-300",
-              text: "text-amber-600",
-              label: "Luxurious Gold Tier",
-              iconColor: "text-amber-800",
-              progressColor: "bg-amber-600"
-            };
-          } else if (computedScore <= 950) {
-            badge = "Elite";
-            nextBadge = "Legend";
-            badgeThreshold = 950;
-            prevThreshold = 800;
-            badgeStyles = {
-              bg: "bg-gradient-to-br from-blue-600 via-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-100 border border-indigo-400",
-              text: "text-indigo-600",
-              label: "Elite Platinum Tier",
-              iconColor: "text-indigo-200",
-              progressColor: "bg-indigo-500"
-            };
-          } else {
-            badge = "Legend";
-            nextBadge = "Maxed";
-            badgeThreshold = 1000;
-            prevThreshold = 950;
-            badgeStyles = {
-              bg: "bg-gradient-to-br from-fuchsia-600 via-violet-600 to-indigo-700 text-white shadow-2xl shadow-fuchsia-100 border border-fuchsia-500",
-              text: "text-fuchsia-600",
-              label: "Legendary Cosmic Tier",
-              iconColor: "text-yellow-300 animate-bounce",
-              progressColor: "bg-fuchsia-500"
-            };
-          }
-
-          const pointsRemaining = Math.max(0, badgeThreshold - computedScore);
-          const badgeProgress = Math.min(100, Math.max(0, ((computedScore - prevThreshold) / (badgeThreshold - prevThreshold)) * 100));
-
-          // Mock rank mapping for private view (without leaking actual numbers or leaderboard list)
-          const rank = partnerDetails?.rank || 3;
-          const performanceScore = Math.round(acceptanceRate * 0.4 + (rating / 5) * 60);
-
-          // Top 5 Eligibility Identification
-          const isEligible = rank <= 5 && partnerDetails?.status === "active";
-
           return (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 space-y-5 shadow-xl shadow-slate-100/50 mt-2">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-indigo-600" /> Performance Dashboard
-                </h3>
-                <span className="text-[10px] uppercase font-black tracking-widest bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full">
-                  Account Summary
-                </span>
-              </div>
-
-              {/* Reward Eligibility banner */}
-              {isEligible ? (
-                <div className="bg-emerald-50 border border-emerald-100 p-3.5 rounded-2xl flex items-center gap-2.5">
-                  <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 animate-spin" style={{ animationDuration: "3s" }} />
-                  <p className="text-xs font-bold text-emerald-700 leading-tight">
-                    Congratulations! You are eligible for this month's Top Performer Reward.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex items-center gap-2.5">
-                  <TrendingUp className="w-5 h-5 text-slate-400 shrink-0" />
-                  <p className="text-xs font-bold text-slate-500 leading-tight">
-                    Keep improving your stats to reach Top 5.
-                  </p>
-                </div>
-              )}
-
-              {/* Two Column stats block */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3.5 bg-slate-50 border border-slate-100/80 rounded-2xl flex flex-col justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">Overall Rank</span>
-                  <div className="mt-2.5 flex items-baseline gap-1">
-                    <p className="text-2xl font-black text-indigo-600">#{rank}</p>
-                    <span className="text-[8px] text-slate-400 uppercase font-black">Aurangabad</span>
-                  </div>
+            <div className="space-y-6">
+              
+              {/* Main Milestone Progress Card */}
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-6 shadow-xl shadow-slate-100/40">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-indigo-600" /> Milestone Rewards
+                  </h3>
+                  {getStatusBadge(milestoneStatus)}
                 </div>
 
-                <div className="p-3.5 bg-slate-50 border border-slate-100/80 rounded-2xl flex flex-col justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">ServeScore</span>
-                  <div className="mt-2.5 flex items-baseline gap-1">
-                    <p className="text-2xl font-black text-emerald-600">{computedScore}</p>
-                    <span className="text-[8px] text-slate-400 uppercase font-black">Points</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress to next badge (Premium card display) */}
-              <div className="space-y-3.5 pt-1">
-                
-                {/* Visual Badge Card */}
-                <div className={`p-5 rounded-2xl ${badgeStyles.bg} flex flex-col justify-between relative overflow-hidden shadow-md`}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[8px] font-black uppercase tracking-widest opacity-80 block">Active Status Badge</span>
-                      <h4 className="text-xl font-black tracking-tight mt-1">{badgeStyles.label}</h4>
+                {/* Main Progress Tracker */}
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Completed Jobs</span>
+                      <p className="text-3xl font-black text-slate-800 mt-1">{milestoneCompletedJobs} <span className="text-xs text-slate-400 font-bold">/ {currentMilestone}</span></p>
                     </div>
-                    <Award className={`w-8 h-8 ${badgeStyles.iconColor} shrink-0`} />
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Average Rating</span>
+                      <p className="text-3xl font-black text-amber-500 mt-1">{rating.toFixed(1)}<span className="text-xs text-slate-400 font-bold">★</span></p>
+                    </div>
                   </div>
-                  
-                  {nextBadge !== "Maxed" && (
-                    <div className="mt-4.5 space-y-1.5">
-                      <div className="flex justify-between text-[10px] font-bold opacity-90">
-                        <span>Progress to {nextBadge}</span>
-                        <span>{Math.round(badgeProgress)}%</span>
-                      </div>
-                      <div className="w-full bg-black/20 h-1.5 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-white h-full rounded-full transition-all duration-500"
-                          style={{ width: `${badgeProgress}%` }}
-                        />
-                      </div>
+
+                  {/* Rating warnings */}
+                  {milestoneCompletedJobs >= currentMilestone && rating < minMilestoneRating && (
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs space-y-1">
+                      <p className="font-extrabold flex items-center gap-2">⚠️ Rating Restriction</p>
+                      <p className="text-muted-foreground leading-relaxed">You achieved the completed jobs milestone, but your average rating ({rating.toFixed(1)}★) is below the minimum required rating of {minMilestoneRating}★. Please improve customer feedback on upcoming jobs to unlock the reward.</p>
                     </div>
                   )}
+
+                  {/* Animated Progress Bar */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold text-slate-600">
+                      <span>Milestone Progress</span>
+                      <span>{Math.round(progressPct)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200/50">
+                      <div 
+                        className="bg-indigo-600 h-full rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                    {jobsRemaining > 0 ? (
+                      <p className="text-[10px] text-slate-400 font-bold">
+                        Need {jobsRemaining} more completed jobs with rating &ge; {minMilestoneRating}★ to unlock this milestone.
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" /> Target achieved! Milestone unlocked.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {nextBadge !== "Maxed" ? (
-                  <p className="text-[10px] text-slate-500 italic font-semibold">
-                    Only <strong className="text-slate-800">{pointsRemaining}</strong> points remaining to unlock next badge.
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-emerald-600 italic font-semibold flex items-center gap-1 bg-emerald-50 p-2.5 rounded-xl">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> Legendary status unlocked! Keep up the outstanding service.
-                  </p>
+                {/* Milestone Cards grid */}
+                <div className="space-y-3 pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Available Milestones</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[100, 200, 300].map((mVal) => {
+                      const isCompleted = currentMilestone > mVal;
+                      const isCurrent = currentMilestone === mVal;
+                      const isLocked = currentMilestone < mVal;
+
+                      return (
+                        <div 
+                          key={mVal} 
+                          className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
+                            isCompleted ? "bg-emerald-50/50 border-emerald-100 text-emerald-800" :
+                            isCurrent ? "bg-indigo-50/30 border-indigo-200 text-indigo-900 shadow-sm animate-pulse" :
+                            "bg-slate-50/50 border-slate-100 text-slate-400 opacity-60"
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-black">{mVal} Jobs</span>
+                            {isCompleted ? <CheckCircle className="w-4 h-4 text-emerald-600" /> :
+                             isCurrent ? <Award className="w-4 h-4 text-indigo-600" /> :
+                             <ShieldCheck className="w-4 h-4 text-slate-300" />}
+                          </div>
+                          <span className="text-[9px] font-bold uppercase tracking-wider block">
+                            {isCompleted ? "Completed" : isCurrent ? "Active Target" : "Locked"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Milestone-specific state configurations */}
+                {milestoneStatus === "approved" && (
+                  <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="space-y-1">
+                      <h4 className="font-black text-base text-indigo-900">🎉 Bonus Approved!</h4>
+                      <p className="text-xs text-indigo-700">Your milestone reward has been approved by the admin. You can withdraw your reward now.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowWithdrawModal(true)}
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-lg hover:shadow-indigo-600/30 transition-all cursor-pointer border-none"
+                    >
+                      Withdraw Bonus Reward
+                    </button>
+                  </div>
+                )}
+
+                {milestoneStatus === "paid" && partnerDetails?.milestonePaymentDetails && (
+                  <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl space-y-4 animate-in fade-in duration-300">
+                    <div className="text-center space-y-1">
+                      <h4 className="font-black text-base text-emerald-950">🎉 Bonus Paid Successfully!</h4>
+                      <p className="text-xs text-emerald-700">Your milestone bonus has been successfully paid.</p>
+                    </div>
+                    <div className="bg-white/85 border border-emerald-100 p-3.5 rounded-xl text-xs space-y-1.5 text-slate-700 font-medium">
+                      <p><strong>Milestone:</strong> {currentMilestone} Jobs Completed</p>
+                      <p><strong>Status:</strong> <span className="text-emerald-600 font-extrabold">Paid Successfully</span></p>
+                      <p><strong>Reference No:</strong> {partnerDetails.milestonePaymentDetails.referenceNumber}</p>
+                      <p><strong>Paid Date:</strong> {partnerDetails.milestonePaymentDetails.paidAt ? new Date(partnerDetails.milestonePaymentDetails.paidAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                    </div>
+                    <button
+                      onClick={handleUnlockNextMilestone}
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md cursor-pointer border-none"
+                    >
+                      Unlock Next Milestone ({currentMilestone + 100} Jobs)
+                    </button>
+                  </div>
                 )}
               </div>
 
-              {/* Achievement History */}
-              <div className="border-t border-slate-100 pt-3.5 space-y-2.5">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Achievement History</span>
-                <div className="grid grid-cols-2 gap-3.5 text-[10px] font-semibold">
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Hall of Fame: <strong className="text-slate-900">{partnerDetails?.achievementHistory?.hallOfFameAppearances || 0}</strong></span>
+              {/* Milestone history listing */}
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-4 shadow-xl shadow-slate-100/40">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Completed Milestones History</span>
+                {(!partnerDetails?.milestoneHistory || partnerDetails.milestoneHistory.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic py-2">No completed milestones registered yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {partnerDetails.milestoneHistory.map((hist: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3.5 rounded-2xl text-xs text-slate-600">
+                        <div className="space-y-1">
+                          <p className="font-extrabold text-slate-800">{hist.milestone} Jobs Milestone</p>
+                          <p className="text-[10px] text-slate-400">Paid: {new Date(hist.paidAt.seconds * 1000).toLocaleDateString()}</p>
+                        </div>
+                        <span className="text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black uppercase">PAID</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <Medal className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Top 5 Finishes: <strong className="text-slate-900">{partnerDetails?.achievementHistory?.top5Finishes || 0}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                    <span>Best Score: <strong className="text-slate-900">{partnerDetails?.achievementHistory?.bestMonthlyPerformance || `${computedScore} Pts`}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Highest Rank: <strong className="text-slate-900">#{partnerDetails?.achievementHistory?.highestRankAchieved || rank}</strong></span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           );
@@ -1152,6 +1257,186 @@ export default function PartnerPortalPage() {
                 className="w-full py-3 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-2xl text-slate-400 cursor-pointer transition-colors bg-white"
               >
                 Continue in Browser
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Celebration Modal */}
+      {showCelebrationModal && (
+        <div className="fixed inset-0 bg-slate-900/90 flex items-center justify-center p-6 z-50 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white p-8 rounded-3xl w-full max-w-md text-center space-y-6 shadow-2xl relative overflow-hidden text-slate-800">
+            <div className="absolute -top-10 -left-10 w-24 h-24 bg-primary/10 rounded-full blur-xl" />
+            <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl" />
+
+            <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto animate-bounce">
+              🎉
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full tracking-wider font-bold">Milestone Unlocked</span>
+              <h3 className="text-2xl font-black text-slate-850">Congratulations!</h3>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                You have successfully unlocked the <strong className="text-slate-800">{partnerDetails?.currentMilestone} Jobs</strong> milestone.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl text-xs space-y-2 text-slate-650 text-left">
+              <div className="flex justify-between">
+                <span>Completed Jobs:</span>
+                <strong className="text-slate-800">{partnerDetails?.milestoneCompletedJobs} Jobs</strong>
+              </div>
+              <div className="flex justify-between">
+                <span>Your Quality Rating:</span>
+                <strong className="text-slate-800">{partnerDetails?.rating?.toFixed(1)}★</strong>
+              </div>
+              <div className="flex justify-between border-t border-slate-150 pt-2 font-bold text-slate-800">
+                <span>Current Status:</span>
+                <span className="text-indigo-600 uppercase font-black">Pending Review</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowCelebrationModal(false);
+                if (typeof window !== "undefined") {
+                  import("canvas-confetti").then((module) => {
+                    const confetti = module.default;
+                    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+                  });
+                }
+              }}
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-lg cursor-pointer border-none"
+            >
+              Continue to Portal
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Withdrawal Modal */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center p-6 z-50 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white border border-slate-100 p-6.5 rounded-3xl w-full max-w-md space-y-6 shadow-2xl relative text-slate-800">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-base text-slate-800">Withdraw Bonus Reward</h3>
+                <p className="text-[10px] text-slate-400 font-bold">Transfer milestone earnings to bank or UPI</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700">Choose Payout Method</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("upi")}
+                    className={`py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      paymentMethod === "upi"
+                        ? "bg-indigo-50 border-indigo-600 text-indigo-600"
+                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    <TrendingUp className="w-4 h-4" /> UPI Payout
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("bank")}
+                    className={`py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      paymentMethod === "bank"
+                        ? "bg-indigo-50 border-indigo-600 text-indigo-600"
+                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Award className="w-4 h-4" /> Bank Account
+                  </button>
+                </div>
+              </div>
+
+              {paymentMethod === "upi" ? (
+                <div className="space-y-1.5 animate-in fade-in duration-200">
+                  <label className="text-xs font-bold text-slate-600">UPI ID *</label>
+                  <input
+                    type="text"
+                    required
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    placeholder="e.g. name@upi, mobile@ybl"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-600 text-xs text-slate-800 focus:bg-white transition-all font-bold"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3 animate-in fade-in duration-200">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-600">Account Holder Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={bankHolderName}
+                      onChange={(e) => setBankHolderName(e.target.value)}
+                      placeholder="e.g. Rajesh Kumar"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-600 text-xs text-slate-800 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-600">Account Number *</label>
+                    <input
+                      type="text"
+                      required
+                      value={bankAccountNumber}
+                      onChange={(e) => setBankAccountNumber(e.target.value)}
+                      placeholder="e.g. 501002394823"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-600 text-xs text-slate-800 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">IFSC Code *</label>
+                      <input
+                        type="text"
+                        required
+                        value={bankIfsc}
+                        onChange={(e) => setBankIfsc(e.target.value.toUpperCase())}
+                        placeholder="e.g. HDFC0000123"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-600 text-xs text-slate-800 focus:bg-white font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-600">Bank Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        placeholder="e.g. HDFC Bank"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-600 text-xs text-slate-800 focus:bg-white font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowWithdrawModal(false)}
+                className="py-3 border border-slate-200 text-slate-500 hover:bg-slate-50 font-bold text-xs rounded-xl cursor-pointer bg-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitWithdrawal}
+                disabled={submittingWithdrawal}
+                className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md cursor-pointer border-none disabled:opacity-50"
+              >
+                {submittingWithdrawal ? "Submitting..." : "Submit Payout"}
               </button>
             </div>
           </div>

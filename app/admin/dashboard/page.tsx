@@ -234,6 +234,58 @@ export default function AdminDashboardPage() {
   const [perfCategory, setPerfCategory] = useState("ALL");
   const [perfStatus, setPerfStatus] = useState("ALL");
   const [selectedSimWorker, setSelectedSimWorker] = useState<any>(null);
+  
+  // Milestone management states
+  const [bonusAmountInput, setBonusAmountInput] = useState("");
+  const [referenceNumberInput, setReferenceNumberInput] = useState("");
+  const [manualExpensesInput, setManualExpensesInput] = useState("");
+  const [adminNotesInput, setAdminNotesInput] = useState("");
+  const [minMilestoneRatingInput, setMinMilestoneRatingInput] = useState("4.0");
+  const [updatingMilestone, setUpdatingMilestone] = useState(false);
+
+  const handleMilestoneAction = async (action: "approve" | "reject" | "pay" | "update_meta", workerId: string) => {
+    setUpdatingMilestone(true);
+    try {
+      const response = await fetch("/api/admin/milestone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          workerId,
+          bonusAmount: parseFloat(bonusAmountInput) || 0,
+          referenceNumber: referenceNumberInput,
+          manualExpenses: parseFloat(manualExpensesInput) || 0,
+          adminNotes: adminNotesInput
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || "Failed to process request");
+      }
+
+      alert("Milestone updated successfully!");
+      setBonusAmountInput("");
+      setReferenceNumberInput("");
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setUpdatingMilestone(false);
+    }
+  };
+
+  const handleUpdateMinRating = async () => {
+    try {
+      const ref = doc(db, "system_config", "toggles");
+      await updateDoc(ref, {
+        minMilestoneRating: parseFloat(minMilestoneRatingInput) || 4.0
+      });
+      alert("Minimum rating updated successfully!");
+    } catch (err: any) {
+      alert("Failed to update min rating config: " + err.message);
+    }
+  };
+
   const [simRatingOffset, setSimRatingOffset] = useState(0.0);
   const [simCompletedOffset, setSimCompletedOffset] = useState(0);
   const [simRejectedOffset, setSimRejectedOffset] = useState(0);
@@ -360,12 +412,15 @@ export default function AdminDashboardPage() {
           doc(db, "system_config", "toggles"),
           (docSnap) => {
             if (docSnap.exists()) {
-              setToggles(docSnap.data());
+              const data = docSnap.data();
+              setToggles(data);
+              setMinMilestoneRatingInput(String(data.minMilestoneRating ?? "4.0"));
             } else {
               setDoc(doc(db, "system_config", "toggles"), {
                 localPartnerServicesEnabled: false,
                 vehicleRentalEnabled: false,
-                customerReviewsEnabled: true
+                customerReviewsEnabled: true,
+                minMilestoneRating: 4.0
               });
             }
           },
@@ -1924,431 +1979,60 @@ export default function AdminDashboardPage() {
 
               {/* Tab: Performance & Rewards Dashboard (Admin Control) */}
               {activeTab === "performance-dashboard" && (() => {
-                // Dynamic calculations for all workers based on algorithm (hidden from worker panel)
-                const computedWorkersList = workers
-                  .filter(w => w.status !== "removed")
-                  .map((worker) => {
-                    const rating = worker.rating || 5.0;
-                    const completed = worker.totalCompletedJobs || 0;
-                    const accepted = worker.totalAcceptedJobs || 0;
-                    const assigned = worker.totalAssignedJobs || 0;
-                    const rejected = worker.totalRejectedJobs || 0;
-                    const complaints = (worker as any).complaintCount || 0;
-                    const warnings = (worker as any).warningCount || 0;
-                    
-                    const acceptanceRate = assigned > 0 ? (accepted / assigned) * 100 : 100;
-                    const completionRate = accepted > 0 ? (completed / accepted) * 100 : 100;
+                // Calculate dynamics across all workers
+                const activeWorkers = workers.filter(w => w.status !== "removed") as any[];
 
-                    // Standard algorithm for internal ServeScore
-                    const serveScore = Math.min(1000, Math.max(0, Math.round(
-                      (rating * 100) + 
-                      (completed * 10) + 
-                      (acceptanceRate * 2) - 
-                      (complaints * 50) - 
-                      (warnings * 100)
-                    )));
+                // Financial calculations
+                const totalRevenueGenerated = activeWorkers.reduce((acc, w) => acc + ((w.totalCompletedJobs || 0) * 99), 0);
+                
+                const totalBonusesPaid = activeWorkers.reduce((acc, w) => {
+                  const history = w.milestoneHistory || [];
+                  const wPaid = history.reduce((sum: number, h: any) => sum + (h.bonusAmount || 0), 0);
+                  return acc + wPaid;
+                }, 0);
 
-                    // Badge assignment criteria
-                    let badge = "Bronze";
-                    if (serveScore <= 300) badge = "Bronze";
-                    else if (serveScore <= 600) badge = "Silver";
-                    else if (serveScore <= 800) badge = "Gold";
-                    else if (serveScore <= 950) badge = "Elite";
-                    else badge = "Legend";
-
-                    return {
-                      ...worker,
-                      serveScore,
-                      badge,
-                      acceptanceRate,
-                      completionRate,
-                      complaints,
-                      warnings,
-                      performanceScore: Math.round(acceptanceRate * 0.4 + (rating / 5) * 60)
-                    };
-                  })
-                  // Sort descending order by ServeScore
-                  .sort((a, b) => b.serveScore - a.serveScore);
-
-                // Compute rank indices
-                const rankedWorkers = computedWorkersList.map((w, index) => {
-                  // Category Rank Calculation
-                  const categoryRank = computedWorkersList
-                    .filter(cw => cw.serviceType === w.serviceType)
-                    .findIndex(cw => cw.id === w.id) + 1;
-
-                  return {
-                    ...w,
-                    overallRank: index + 1,
-                    categoryRank
-                  };
-                });
-
-                // Top 5 identifying
-                const top5Workers = rankedWorkers.slice(0, 5);
-
-                // Handle winner announcement push notification dispatch
-                const handleAnnounceWinners = async () => {
-                  setAnnouncing(true);
-                  setAnnounceSuccess("");
-                  try {
-                    // Send transaction updates to database top 5
-                    for (const winner of top5Workers) {
-                      const docRef = doc(db, "workers", winner.id);
-                      await updateDoc(docRef, {
-                        "achievementHistory.top5Finishes": ((winner as any).achievementHistory?.top5Finishes || 0) + 1,
-                        "achievementHistory.hallOfFameAppearances": ((winner as any).achievementHistory?.hallOfFameAppearances || 0) + 1,
-                        "achievementHistory.highestRankAchieved": Math.min(
-                          (winner as any).achievementHistory?.highestRankAchieved || 99,
-                          winner.overallRank
-                        )
-                      });
-                    }
-
-                    // Archive this month's winners to /hall_of_fame
-                    const dateObj = new Date();
-                    const monthYear = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`;
-                    
-                    const archiveRef = doc(db, "hall_of_fame", monthYear);
-                    await setDoc(archiveRef, {
-                      monthYear,
-                      archivedAt: serverTimestamp(),
-                      topWorkers: top5Workers.map(w => ({
-                        workerId: w.id,
-                        name: w.name,
-                        category: w.serviceType,
-                        badge: w.badge,
-                        rating: w.rating,
-                        completedJobs: w.totalCompletedJobs,
-                        serveScore: w.serveScore,
-                        rewardStatus: "Approved"
-                      }))
-                    });
-
-                    // Trigger Push announcement simulation trace
-                    setAnnounceSuccess("🎉 Monthly Rewards successfully announced! Push notifications dispatched to top professionals & Hall of Fame archived.");
-                  } catch (err: any) {
-                    console.error("Announcement error:", err);
-                    alert("Failed to process announcement logs: " + (err.message || err));
-                  } finally {
-                    setAnnouncing(false);
+                const totalPendingBonuses = activeWorkers.reduce((acc, w) => {
+                  if (w.milestoneStatus && ["pending_review", "approved", "withdrawal_requested", "payment_processing"].includes(w.milestoneStatus)) {
+                    return acc + (w.milestoneBonusAmount || 0);
                   }
-                };
+                  return acc;
+                }, 0);
 
-                // Trigger App Appreciation Certificate Download (Beautiful HTML5 Canvas PNG rendering)
-                const downloadCertificate = (worker: any) => {
-                  const canvas = document.createElement("canvas");
-                  canvas.width = 1120;
-                  canvas.height = 800;
-                  const ctx = canvas.getContext("2d");
-                  if (!ctx) return;
+                const totalExpenses = activeWorkers.reduce((acc, w) => acc + (w.manualExpenses || 0), 0);
+                const netProfitGenerated = totalRevenueGenerated - totalBonusesPaid - totalPendingBonuses - totalExpenses;
 
-                  const drawDesign = (photoImg: HTMLImageElement | null) => {
-                    // Draw dark premium background
-                    const grad = ctx.createRadialGradient(560, 400, 100, 560, 400, 700);
-                    grad.addColorStop(0, "#2F2521");
-                    grad.addColorStop(1, "#15100E");
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, 1120, 800);
-
-                    // Gold double border
-                    ctx.strokeStyle = "#D4AF37";
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(30, 30, 1060, 740);
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeRect(42, 42, 1036, 716);
-
-                    // Corner decorations
-                    const drawCornerDeco = (x: number, y: number, rotation: number) => {
-                      ctx.save();
-                      ctx.translate(x, y);
-                      ctx.rotate(rotation);
-                      ctx.strokeStyle = "#D4AF37";
-                      ctx.lineWidth = 3;
-                      ctx.beginPath();
-                      ctx.moveTo(0, 30);
-                      ctx.lineTo(0, 0);
-                      ctx.lineTo(30, 0);
-                      ctx.stroke();
-                      ctx.restore();
-                    };
-                    drawCornerDeco(45, 45, 0);
-                    drawCornerDeco(1075, 45, Math.PI / 2);
-                    drawCornerDeco(1075, 755, Math.PI);
-                    drawCornerDeco(45, 755, -Math.PI / 2);
-
-                    // Header Text
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.textAlign = "center";
-                    ctx.font = "bold 14px sans-serif";
-                    ctx.fillText("SERVEGO APPRECIATION AWARDS", 560, 110);
-
-                    // Title
-                    const titleGrad = ctx.createLinearGradient(300, 0, 820, 0);
-                    titleGrad.addColorStop(0, "#D4AF37");
-                    titleGrad.addColorStop(0.5, "#F3E5AB");
-                    titleGrad.addColorStop(1, "#AA7C11");
-                    ctx.fillStyle = titleGrad;
-                    ctx.font = "bold 36px Georgia, serif";
-                    ctx.fillText("CERTIFICATE OF APPRECIATION", 560, 175);
-
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "italic 16px Georgia, serif";
-                    ctx.fillText("This is proudly presented to", 560, 240);
-
-                    // Name
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "bold 44px Georgia, serif";
-                    ctx.fillText(worker.name.toUpperCase(), 560, 310);
-                    
-                    // Decorative line below name
-                    ctx.strokeStyle = "#D4AF37";
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(460, 335);
-                    ctx.lineTo(660, 335);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.arc(560, 335, 4, 0, Math.PI * 2);
-                    ctx.fillStyle = "#D4AF37";
-                    ctx.fill();
-
-                    // Citation
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "16px sans-serif";
-                    ctx.fillText("For outstanding performance and dedication as one of the", 560, 390);
-                    ctx.fillText("Top 5 Performing Professionals in Aurangabad for the current cycle.", 560, 420);
-
-                    // Embed Photo if present
-                    if (photoImg) {
-                      ctx.save();
-                      ctx.beginPath();
-                      ctx.arc(560, 520, 50, 0, Math.PI * 2);
-                      ctx.clip();
-                      ctx.drawImage(photoImg, 510, 470, 100, 100);
-                      ctx.restore();
-                      
-                      // Circle border
-                      ctx.strokeStyle = "#D4AF37";
-                      ctx.lineWidth = 3;
-                      ctx.beginPath();
-                      ctx.arc(560, 520, 51, 0, Math.PI * 2);
-                      ctx.stroke();
-                    } else {
-                      // Draw Gold Seal Medallion instead
-                      ctx.fillStyle = "#D4AF37";
-                      ctx.beginPath();
-                      ctx.arc(560, 520, 35, 0, Math.PI * 2);
-                      ctx.fill();
-                      ctx.fillStyle = "#15100E";
-                      ctx.font = "bold 18px sans-serif";
-                      ctx.fillText("SEAL", 560, 526);
-                    }
-
-                    // Score / Category table
-                    ctx.fillStyle = "#1C1816";
-                    ctx.fillRect(260, 600, 600, 60);
-                    ctx.strokeStyle = "#4D423C";
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(260, 600, 600, 60);
-
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "bold 13px sans-serif";
-                    ctx.textAlign = "left";
-                    ctx.fillText(`CATEGORY: ${getServiceName(worker.serviceType).toUpperCase()}`, 290, 635);
-                    ctx.textAlign = "center";
-                    ctx.fillText(`TIER: ${worker.badge.toUpperCase()}`, 560, 635);
-                    ctx.textAlign = "right";
-                    ctx.fillText(`SERVESCORE: ${worker.serveScore} PTS`, 830, 635);
-
-                    // Signatures
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "italic 13px Georgia, serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText("ServeGo Admin Team", 560, 715);
-                    ctx.font = "9px sans-serif";
-                    ctx.fillText("VERIFIED ON BLOCKCHAIN & FIRESTORE DATABASE", 560, 735);
-
-                    // Trigger download
-                    const url = canvas.toDataURL("image/png");
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `Appreciation_Certificate_${worker.name.replace(/\s+/g, "_")}.png`;
-                    a.click();
-                  };
-
-                  if (worker.imageUrl) {
-                    const img = new Image();
-                    img.crossOrigin = "anonymous";
-                    img.src = worker.imageUrl;
-                    img.onload = () => drawDesign(img);
-                    img.onerror = () => drawDesign(null);
-                  } else {
-                    drawDesign(null);
-                  }
-                };
-
-                // Generate Social Winner Poster (Beautiful HTML5 Canvas PNG rendering)
-                const generateWinnerPoster = (worker: any) => {
-                  const canvas = document.createElement("canvas");
-                  canvas.width = 1000;
-                  canvas.height = 1000;
-                  const ctx = canvas.getContext("2d");
-                  if (!ctx) return;
-
-                  const drawPosterDesign = (photoImg: HTMLImageElement | null) => {
-                    // Deep gradient backdrop
-                    const grad = ctx.createRadialGradient(500, 500, 50, 500, 500, 650);
-                    grad.addColorStop(0, "#332621");
-                    grad.addColorStop(1, "#140F0E");
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, 1000, 1000);
-
-                    // Gold Border Outline
-                    ctx.strokeStyle = "#D4AF37";
-                    ctx.lineWidth = 8;
-                    ctx.strokeRect(40, 40, 920, 920);
-
-                    // Inner border lines
-                    ctx.strokeStyle = "#4D423C";
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(55, 55, 890, 890);
-
-                    // Header Tag
-                    ctx.fillStyle = "#D4AF37";
-                    ctx.fillRect(350, 80, 300, 40);
-                    ctx.fillStyle = "#140F0E";
-                    ctx.font = "bold 14px sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText("SERVEGO TOP PROFESSIONAL", 500, 105);
-
-                    // Main image frame (Large circle in center)
-                    const imgX = 500;
-                    const imgY = 380;
-                    const imgRadius = 140;
-
-                    if (photoImg) {
-                      ctx.save();
-                      ctx.beginPath();
-                      ctx.arc(imgX, imgY, imgRadius, 0, Math.PI * 2);
-                      ctx.clip();
-                      ctx.drawImage(photoImg, imgX - imgRadius, imgY - imgRadius, imgRadius * 2, imgRadius * 2);
-                      ctx.restore();
-
-                      // Glowing frame
-                      ctx.strokeStyle = "#D4AF37";
-                      ctx.lineWidth = 8;
-                      ctx.beginPath();
-                      ctx.arc(imgX, imgY, imgRadius + 4, 0, Math.PI * 2);
-                      ctx.stroke();
-                    } else {
-                      // fallback star icon representation
-                      ctx.fillStyle = "#D4AF37";
-                      ctx.beginPath();
-                      ctx.arc(imgX, imgY, imgRadius, 0, Math.PI * 2);
-                      ctx.fill();
-                      
-                      ctx.fillStyle = "#140F0E";
-                      ctx.font = "bold 90px Georgia, serif";
-                      ctx.fillText("★", imgX, imgY + 30);
-                    }
-
-                    // Service badge below photo
-                    ctx.fillStyle = "#D4AF37";
-                    ctx.fillRect(380, 550, 240, 35);
-                    ctx.fillStyle = "#1C1816";
-                    ctx.font = "bold 13px sans-serif";
-                    ctx.fillText(getServiceName(worker.serviceType).toUpperCase(), 500, 573);
-
-                    // Name of Professional
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "bold 46px Georgia, serif";
-                    ctx.fillText(worker.name, 500, 640);
-
-                    // Badge / Rating Details
-                    ctx.fillStyle = "#A89F95";
-                    ctx.font = "20px sans-serif";
-                    ctx.fillText(`Quality Rating: ${worker.rating.toFixed(1)} ★   |   Completed Jobs: ${worker.totalCompletedJobs}`, 500, 690);
-
-                    // Performance Tier Info
-                    ctx.fillStyle = "#D4AF37";
-                    ctx.font = "bold 26px sans-serif";
-                    ctx.fillText(`SERVESCORE TIER: ${worker.badge.toUpperCase()}`, 500, 750);
-
-                    // Footer branding
-                    ctx.strokeStyle = "#4D423C";
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.moveTo(250, 800);
-                    ctx.lineTo(750, 800);
-                    ctx.stroke();
-
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "italic 16px Georgia, serif";
-                    ctx.fillText('"Delivering safety, trust, and premium quality service to Aurangabad"', 500, 840);
-
-                    ctx.fillStyle = "#FAF6F1";
-                    ctx.font = "bold 15px sans-serif";
-                    ctx.fillText("WWW.SERVEGO.CO.IN", 500, 900);
-
-                    // Trigger download
-                    const url = canvas.toDataURL("image/png");
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `Winner_Poster_${worker.name.replace(/\s+/g, "_")}.png`;
-                    a.click();
-                  };
-
-                  if (worker.imageUrl) {
-                    const img = new Image();
-                    img.crossOrigin = "anonymous";
-                    img.src = worker.imageUrl;
-                    img.onload = () => drawPosterDesign(img);
-                    img.onerror = () => drawPosterDesign(null);
-                  } else {
-                    drawPosterDesign(null);
-                  }
-                };
-
-                // Calculate active filtered list
-                const filteredRanked = rankedWorkers.filter((w) => {
+                // Filtered workers list
+                const filteredWorkers = activeWorkers.filter((w: any) => {
                   const matchSearch = w.name.toLowerCase().includes(perfSearch.toLowerCase()) || w.mobile.includes(perfSearch);
                   const matchCategory = perfCategory === "ALL" || w.serviceType === perfCategory;
-                  return matchSearch && matchCategory;
+                  
+                  // Status filter
+                  let matchStatus = true;
+                  if (perfStatus !== "ALL") {
+                    matchStatus = w.milestoneStatus === perfStatus;
+                  }
+                  
+                  return matchSearch && matchCategory && matchStatus;
                 });
 
                 return (
                   <div className="space-y-8 animate-in fade-in duration-200">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                       <div>
-                        <h2 className="text-2xl font-black tracking-tight text-foreground">Rewards & Leaderboard Management</h2>
+                        <h2 className="text-2xl font-black tracking-tight text-foreground">ServeGo Milestone Rewards & Profit Analytics</h2>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Track internal ServeScores, calculate quality badge metrics, and configure monthly top performer announcements.
+                          Review milestone payout requests, log operational expenses, and analyze real-time platform earnings.
                         </p>
                       </div>
-                      <button
-                        onClick={handleAnnounceWinners}
-                        disabled={announcing}
-                        className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md hover:shadow-emerald-600/30 flex items-center gap-2 border-none transition-all cursor-pointer"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        {announcing ? "Processing..." : "Announce Monthly Rewards"}
-                      </button>
                     </div>
-
-                    {announceSuccess && (
-                      <div className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 p-4 rounded-2xl text-xs font-bold animate-in slide-in-from-top-2">
-                        {announceSuccess}
-                      </div>
-                    )}
 
                     {/* Dashboard Statistics Grid */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                       {[
-                        { label: "Elite Tier Count", value: rankedWorkers.filter(w => w.badge === "Elite" || w.badge === "Legend").length, icon: ShieldCheck, color: "text-emerald-500" },
-                        { label: "Active Competitors", value: rankedWorkers.length, icon: Users, color: "text-blue-500" },
-                        { label: "Average ServeScore", value: Math.round(rankedWorkers.reduce((acc, curr) => acc + curr.serveScore, 0) / (rankedWorkers.length || 1)), icon: Trophy, color: "text-amber-500" },
-                        { label: "Top Performer Min", value: top5Workers[top5Workers.length - 1]?.serveScore || 0, icon: Medal, color: "text-primary" }
+                        { label: "Platform Gross Revenue", value: `₹${totalRevenueGenerated}`, icon: Trophy, color: "text-amber-500" },
+                        { label: "Bonuses Paid (CONFIDENTIAL)", value: `₹${totalBonusesPaid}`, icon: ShieldCheck, color: "text-emerald-500" },
+                        { label: "Pending Milestone Payouts", value: `₹${totalPendingBonuses}`, icon: Medal, color: "text-indigo-500" },
+                        { label: "Estimated Net Profit", value: `₹${netProfitGenerated}`, icon: Users, color: "text-blue-500" }
                       ].map((item, idx) => {
                         const Icon = item.icon;
                         return (
@@ -2363,339 +2047,394 @@ export default function AdminDashboardPage() {
                       })}
                     </div>
 
-                    {/* Simulation playground & details block (Only visible to Admin) */}
+                    {/* Config Row */}
+                    <div className="bg-card border border-border/60 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-black uppercase text-foreground tracking-wider">Milestone Quality Gate</h4>
+                        <p className="text-[10px] text-muted-foreground">Define the minimum average rating needed for workers to claim milestone bonus rewards.</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            min="1.0"
+                            max="5.0"
+                            step="0.1"
+                            value={minMilestoneRatingInput}
+                            onChange={(e) => setMinMilestoneRatingInput(e.target.value)}
+                            className="bg-muted border border-border rounded-xl px-4 py-2 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-primary text-center font-bold"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-amber-500 font-mono">★</span>
+                        </div>
+                        <button
+                          onClick={handleUpdateMinRating}
+                          className="px-4 py-2.5 bg-primary text-primary-foreground font-black text-xs rounded-xl shadow-md cursor-pointer border-none"
+                        >
+                          Update Quality Gate
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Main Content Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Left Block: Worker Analytics List */}
+                      
+                      {/* Left Panel: Workers Table */}
                       <div className="lg:col-span-2 space-y-4">
                         <div className="bg-card border border-border/60 rounded-3xl p-5 space-y-4">
-                          <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
-                            <Trophy className="w-4 h-4 text-primary" /> Aurangabad Live Scoreboard
-                          </h3>
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
+                              <Trophy className="w-4 h-4 text-primary" /> Active Service Partners
+                            </h3>
+                          </div>
                           
-                          {/* Filters Row */}
-                          <div className="flex gap-3">
-                            <div className="relative flex-1">
+                          {/* Search Filters Row */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="relative">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                               <input
                                 type="text"
                                 value={perfSearch}
                                 onChange={(e) => setPerfSearch(e.target.value)}
-                                placeholder="Search by name or number..."
+                                placeholder="Search partner name or mobile..."
                                 className="w-full pl-9 pr-4 py-2 bg-muted/40 border border-border/80 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background"
                               />
                             </div>
+                            
                             <select
                               value={perfCategory}
                               onChange={(e) => setPerfCategory(e.target.value)}
-                              className="bg-muted/40 border border-border/80 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background"
+                              className="bg-muted/40 border border-border/80 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background cursor-pointer"
                             >
                               <option value="ALL">All Categories</option>
                               {SERVICES_LIST.map(opt => (
                                 <option key={opt.id} value={opt.id}>{opt.name}</option>
                               ))}
                             </select>
+
+                            <select
+                              value={perfStatus}
+                              onChange={(e) => setPerfStatus(e.target.value)}
+                              className="bg-muted/40 border border-border/80 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background cursor-pointer"
+                            >
+                              <option value="ALL">All Payout States</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="pending_review">Pending Review</option>
+                              <option value="approved">Approved</option>
+                              <option value="withdrawal_requested">Withdrawal Requested</option>
+                              <option value="paid">Paid Successfully</option>
+                              <option value="rejected">Rejected</option>
+                            </select>
                           </div>
 
-                          {/* Leaderboard data view */}
+                          {/* Table UI */}
                           <div className="overflow-x-auto">
                             <table className="w-full text-xs text-left border-collapse">
                               <thead className="bg-muted/30 font-bold uppercase text-[9px] text-muted-foreground border-b border-border/50">
                                 <tr>
-                                  <th className="px-4 py-2">Rank</th>
                                   <th className="px-4 py-2">Worker</th>
-                                  <th className="px-4 py-2 text-center">Score</th>
-                                  <th className="px-4 py-2 text-center">Badge</th>
-                                  <th className="px-4 py-2 text-right">Appreciation</th>
+                                  <th className="px-4 py-2 text-center">Milestone</th>
+                                  <th className="px-4 py-2 text-center">Jobs Progress</th>
+                                  <th className="px-4 py-2 text-center">Rating</th>
+                                  <th className="px-4 py-2 text-right">Payout Status</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-border/50">
-                                {filteredRanked.map((row) => (
-                                  <tr 
-                                    key={row.id} 
-                                    onClick={() => {
-                                      setSelectedSimWorker(row);
-                                      setSimRatingOffset(0.0);
-                                      setSimCompletedOffset(0);
-                                      setSimRejectedOffset(0);
-                                      setSimComplaintsOffset(0);
-                                      setSimAcceptanceRateOffset(0);
-                                    }}
-                                    className={`hover:bg-muted/10 transition-colors cursor-pointer ${
-                                      selectedSimWorker?.id === row.id ? "bg-primary/5" : ""
-                                    }`}
-                                  >
-                                    <td className="px-4 py-3 font-mono font-black">
-                                      <span className={row.overallRank <= 5 ? "text-primary font-black" : "text-muted-foreground"}>
-                                        #{row.overallRank}
-                                      </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="font-bold text-foreground">{row.name}</div>
-                                      <div className="text-[10px] text-muted-foreground">{getServiceName(row.serviceType)} • Cat Rank #{row.categoryRank}</div>
-                                    </td>
-                                    <td className="px-4 py-3 text-center font-black text-emerald-500">{row.serveScore}</td>
-                                    <td className="px-4 py-3 text-center">
-                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                                        row.badge === "Legend" ? "bg-amber-500/10 text-amber-500" :
-                                        row.badge === "Elite" ? "bg-emerald-500/10 text-emerald-500" :
-                                        row.badge === "Gold" ? "bg-yellow-500/10 text-yellow-500" :
-                                        "bg-neutral-500/10 text-neutral-500"
-                                      }`}>
-                                        {row.badge}
-                                      </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        onClick={() => downloadCertificate(row)}
-                                        className="p-1 text-primary hover:bg-primary/10 rounded"
-                                        title="Download Appreciation Certificate"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => generateWinnerPoster(row)}
-                                        className="p-1 text-emerald-500 hover:bg-emerald-500/10 rounded"
-                                        title="Generate Social Poster"
-                                      >
-                                        <Sparkles className="w-4 h-4" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
+                                {filteredWorkers.map((row: any) => {
+                                  const milestoneTarget = row.currentMilestone || 100;
+                                  const milestoneJobs = row.milestoneCompletedJobs || 0;
+                                  const milestoneStatus = row.milestoneStatus || "in_progress";
+                                  const rating = row.rating || 5.0;
+
+                                  return (
+                                    <tr 
+                                      key={row.id} 
+                                      onClick={() => {
+                                        setSelectedSimWorker(row);
+                                        setBonusAmountInput(row.milestoneBonusAmount ? String(row.milestoneBonusAmount) : "");
+                                        setReferenceNumberInput(row.milestonePaymentDetails?.referenceNumber || "");
+                                        setManualExpensesInput(row.manualExpenses ? String(row.manualExpenses) : "");
+                                        setAdminNotesInput(row.adminNotes || "");
+                                      }}
+                                      className={`hover:bg-muted/10 transition-colors cursor-pointer ${
+                                        selectedSimWorker?.id === row.id ? "bg-primary/5" : ""
+                                      }`}
+                                    >
+                                      <td className="px-4 py-3">
+                                        <div className="font-bold text-foreground">{row.name}</div>
+                                        <div className="text-[10px] text-muted-foreground">{getServiceName(row.serviceType)} • {row.mobile}</div>
+                                      </td>
+                                      <td className="px-4 py-3 text-center font-bold">{milestoneTarget} Jobs</td>
+                                      <td className="px-4 py-3 text-center font-mono font-bold">
+                                        <span className={milestoneJobs >= milestoneTarget ? "text-emerald-500" : "text-foreground"}>
+                                          {milestoneJobs} / {milestoneTarget}
+                                        </span>
+                                      </td>
+                                      <td className={`px-4 py-3 text-center font-bold ${rating >= (toggles.minMilestoneRating ?? 4.0) ? "text-amber-500" : "text-rose-500"}`}>
+                                        {rating.toFixed(1)} ★
+                                      </td>
+                                      <td className="px-4 py-3 text-right">
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                          milestoneStatus === "paid" ? "bg-emerald-500/10 text-emerald-500" :
+                                          milestoneStatus === "withdrawal_requested" ? "bg-purple-500/10 text-purple-500" :
+                                          milestoneStatus === "approved" ? "bg-indigo-500/10 text-indigo-500" :
+                                          milestoneStatus === "pending_review" ? "bg-yellow-500/10 text-yellow-500 animate-pulse" :
+                                          milestoneStatus === "rejected" ? "bg-rose-500/10 text-rose-500" :
+                                          "bg-neutral-500/10 text-neutral-500"
+                                        }`}>
+                                          {milestoneStatus.replace("_", " ")}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
                         </div>
+
+                        {/* Custom Financial Distribution Chart */}
+                        <div className="bg-card border border-border/60 p-5 rounded-3xl shadow-sm space-y-4">
+                          <h4 className="text-xs font-black uppercase text-muted-foreground tracking-wider">Estimated Financial Distribution</h4>
+                          <div className="w-full h-48 flex items-end gap-6 pt-6 font-mono text-[10px] text-muted-foreground border-b border-border/50 pb-2">
+                            {[
+                              { label: "Gross Revenue", value: totalRevenueGenerated, color: "bg-blue-500" },
+                              { label: "Paid Bonuses", value: totalBonusesPaid, color: "bg-indigo-500" },
+                              { label: "Pending Payouts", value: totalPendingBonuses, color: "bg-purple-500" },
+                              { label: "Logged Expenses", value: totalExpenses, color: "bg-rose-500" },
+                              { label: "Estimated Net Profit", value: netProfitGenerated, color: "bg-emerald-500 font-bold" }
+                            ].map((bar, idx) => {
+                              const maxVal = Math.max(100, totalRevenueGenerated, totalBonusesPaid, totalPendingBonuses, totalExpenses, netProfitGenerated);
+                              const heightPct = `${Math.max(8, (bar.value / maxVal) * 100)}%`;
+                              return (
+                                <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                                  <span className="font-bold text-foreground">₹{bar.value}</span>
+                                  <div className="w-full rounded-t-xl transition-all duration-500 relative group overflow-hidden" style={{ height: heightPct }}>
+                                    <div className={`absolute inset-0 ${bar.color} opacity-80 group-hover:opacity-100 transition-opacity`} />
+                                  </div>
+                                  <span className="font-sans font-bold text-[9px] uppercase tracking-wider text-center">{bar.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Right Block: Leaderboard Simulation Tool (Only visible to Admin) */}
+                      {/* Right Panel: Selected Worker Detail & Decision Support */}
                       <div className="space-y-6">
-                        <div className="bg-card border border-border/60 rounded-3xl p-5 space-y-4 shadow-sm">
-                          <div className="border-b border-border/50 pb-3">
-                            <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
-                              <Settings className="w-4 h-4 text-primary" /> Score & Rank Simulator
-                            </h3>
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                              Simulate rank variables dynamically without modifying live database state.
-                            </p>
-                          </div>
+                        {selectedSimWorker ? (() => {
+                          const wDetail = workers.find(x => x.id === selectedSimWorker.id) || selectedSimWorker;
+                          const completedJobs = wDetail.totalCompletedJobs || 0;
+                          const grossRevenue = completedJobs * 99;
+                          
+                          // Sum worker historical bonus amount
+                          const workerHistory = wDetail.milestoneHistory || [];
+                          const workerPaidBonus = workerHistory.reduce((sum: number, h: any) => sum + (h.bonusAmount || 0), 0);
+                          const workerPendingBonus = ["pending_review", "approved", "withdrawal_requested", "payment_processing"].includes(wDetail.milestoneStatus) ? (wDetail.milestoneBonusAmount || 0) : 0;
+                          
+                          const workerExpenses = parseFloat(manualExpensesInput) || wDetail.manualExpenses || 0;
+                          const workerNetProfit = grossRevenue - workerPaidBonus - workerPendingBonus - workerExpenses;
 
-                          {selectedSimWorker ? (() => {
-                            // Compute base stats
-                            const baseRating = selectedSimWorker.rating || 5.0;
-                            const baseCompleted = selectedSimWorker.totalCompletedJobs || 0;
-                            const baseAccepted = selectedSimWorker.totalAcceptedJobs || 0;
-                            const baseRejected = selectedSimWorker.totalRejectedJobs || 0;
-                            const baseAssigned = selectedSimWorker.totalAssignedJobs || 0;
-                            const baseComplaints = selectedSimWorker.complaints || 0;
-                            const baseWarnings = selectedSimWorker.warnings || 0;
-                            const baseAcceptanceRate = baseAssigned > 0 ? (baseAccepted / baseAssigned) * 100 : 100;
+                          return (
+                            <div className="bg-card border border-border/60 rounded-3xl p-5 space-y-5 shadow-sm">
+                              <div className="border-b border-border/50 pb-3">
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block">Decision Support Panel</span>
+                                <h4 className="font-black text-sm text-primary mt-1">{wDetail.name}</h4>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{getServiceName(wDetail.serviceType)} • {wDetail.mobile}</p>
+                              </div>
 
-                            // Apply offsets to simulate values
-                            const simRating = Math.min(5.0, Math.max(1.0, parseFloat((baseRating + simRatingOffset).toFixed(1))));
-                            const simCompleted = Math.max(0, baseCompleted + simCompletedOffset);
-                            const simRejected = Math.max(0, baseRejected + simRejectedOffset);
-                            const simComplaints = Math.max(0, baseComplaints + simComplaintsOffset);
-                            const simAcceptanceRate = Math.min(100, Math.max(0, parseFloat((baseAcceptanceRate + simAcceptanceRateOffset).toFixed(1))));
-
-                            // Calculate simulated ServeScore
-                            const simServeScore = Math.min(1000, Math.max(0, Math.round(
-                              (simRating * 100) + 
-                              (simCompleted * 10) + 
-                              (simAcceptanceRate * 2) - 
-                              (simComplaints * 50) - 
-                              (baseWarnings * 100)
-                            )));
-
-                            // Simulated Badge Tier
-                            let simBadge = "Bronze";
-                            if (simServeScore <= 300) simBadge = "Bronze";
-                            else if (simServeScore <= 600) simBadge = "Silver";
-                            else if (simServeScore <= 800) simBadge = "Gold";
-                            else if (simServeScore <= 950) simBadge = "Elite";
-                            else simBadge = "Legend";
-
-                            // Simulated overall rank computation
-                            const tempSimList = computedWorkersList.map((item) => {
-                              if (item.id === selectedSimWorker.id) {
-                                return { ...item, serveScore: simServeScore };
-                              }
-                              return item;
-                            }).sort((a, b) => b.serveScore - a.serveScore);
-
-                            const simRank = tempSimList.findIndex(x => x.id === selectedSimWorker.id) + 1;
-                            const simCategoryRank = tempSimList
-                              .filter(x => x.serviceType === selectedSimWorker.serviceType)
-                              .findIndex(x => x.id === selectedSimWorker.id) + 1;
-
-                            const isSimEligible = simRank <= 5;
-                            const scoreDiff = simServeScore - selectedSimWorker.serveScore;
-
-                            return (
-                              <div className="space-y-4">
-                                <div className="p-3 bg-[#1C1816]/30 border border-border/80 rounded-2xl space-y-1.5">
-                                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Simulating Target</span>
-                                  <h4 className="font-extrabold text-sm text-primary">{selectedSimWorker.name}</h4>
-                                  <p className="text-[10px] text-muted-foreground">Original Score: <strong>{selectedSimWorker.serveScore} Pts</strong> • Rank #{selectedSimWorker.overallRank}</p>
-                                </div>
-
-                                {/* Slider controls */}
-                                <div className="space-y-3 pt-2">
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-[10px] font-bold">
-                                      <span>Simulate Rating (Current: {baseRating})</span>
-                                      <span className="text-primary font-mono">{simRating} ★</span>
-                                    </div>
-                                    <input 
-                                      type="range" 
-                                      min={-2.0} 
-                                      max={2.0} 
-                                      step={0.1}
-                                      value={simRatingOffset}
-                                      onChange={(e) => setSimRatingOffset(parseFloat(e.target.value))}
-                                      className="w-full accent-primary bg-muted rounded"
-                                    />
+                              {/* Profit Calculator Card */}
+                              <div className="p-4 bg-muted/30 border border-border/70 rounded-2xl space-y-3">
+                                <h5 className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Partner Profit Analytics</h5>
+                                <div className="space-y-2 text-xs">
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Gross Revenue (₹99/job):</span>
+                                    <strong className="text-foreground">₹{grossRevenue}</strong>
                                   </div>
-
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-[10px] font-bold">
-                                      <span>Simulate Completed Jobs (+/-)</span>
-                                      <span className="text-primary font-mono">{simCompleted} Jobs</span>
-                                    </div>
-                                    <input 
-                                      type="range" 
-                                      min={-20} 
-                                      max={50} 
-                                      step={1}
-                                      value={simCompletedOffset}
-                                      onChange={(e) => setSimCompletedOffset(parseInt(e.target.value, 10))}
-                                      className="w-full accent-primary bg-muted rounded"
-                                    />
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Paid Bonuses (CONFIDENTIAL):</span>
+                                    <strong className="text-indigo-500">₹{workerPaidBonus}</strong>
                                   </div>
-
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-[10px] font-bold">
-                                      <span>Simulate Complaints (+/-)</span>
-                                      <span className="text-primary font-mono">{simComplaints} Logs</span>
-                                    </div>
-                                    <input 
-                                      type="range" 
-                                      min={-5} 
-                                      max={10} 
-                                      step={1}
-                                      value={simComplaintsOffset}
-                                      onChange={(e) => setSimComplaintsOffset(parseInt(e.target.value, 10))}
-                                      className="w-full accent-primary bg-muted rounded"
-                                    />
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Pending Bonuses:</span>
+                                    <strong className="text-purple-500">₹{workerPendingBonus}</strong>
                                   </div>
-
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-[10px] font-bold">
-                                      <span>Simulate Acceptance Rate (+/-)</span>
-                                      <span className="text-primary font-mono">{simAcceptanceRate}%</span>
-                                    </div>
-                                    <input 
-                                      type="range" 
-                                      min={-50} 
-                                      max={50} 
-                                      step={1}
-                                      value={simAcceptanceRateOffset}
-                                      onChange={(e) => setSimAcceptanceRateOffset(parseInt(e.target.value, 10))}
-                                      className="w-full accent-primary bg-muted rounded"
-                                    />
+                                  <div className="flex justify-between border-t border-border/50 pt-2 font-bold text-foreground">
+                                    <span>Estimated Net Profit:</span>
+                                    <span className="text-emerald-500">₹{workerNetProfit}</span>
                                   </div>
                                 </div>
+                              </div>
 
-                                {/* Comparison visual metrics summary */}
-                                <div className="border-t border-border/60 pt-3.5 space-y-3">
-                                  <h5 className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Simulation Output</h5>
-                                  
-                                  <div className="grid grid-cols-2 gap-3 text-xs">
-                                    <div className="p-2.5 bg-muted/30 border border-border/80 rounded-xl space-y-1">
-                                      <span className="text-[9px] text-muted-foreground uppercase font-bold block">New ServeScore</span>
-                                      <p className="font-mono font-black text-sm text-emerald-500">
-                                        {simServeScore} 
-                                        <span className={`text-[10px] ml-1.5 ${scoreDiff >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                                          ({scoreDiff >= 0 ? `+${scoreDiff}` : scoreDiff})
-                                        </span>
-                                      </p>
+                              {/* Operations adjustments */}
+                              <div className="space-y-3">
+                                <h5 className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Operational Adjustment</h5>
+                                <div className="space-y-2">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-muted-foreground">Manual Expenses Log (₹)</label>
+                                    <input 
+                                      type="number"
+                                      value={manualExpensesInput}
+                                      onChange={(e) => setManualExpensesInput(e.target.value)}
+                                      placeholder="e.g. 500 (Refunds / compensations)"
+                                      className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-muted-foreground">Administrative Notes</label>
+                                    <textarea 
+                                      value={adminNotesInput}
+                                      onChange={(e) => setAdminNotesInput(e.target.value)}
+                                      placeholder="Audit logs, payout details, complaints note..."
+                                      rows={2}
+                                      className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => handleMilestoneAction("update_meta", wDetail.id)}
+                                    disabled={updatingMilestone}
+                                    className="w-full py-2 bg-muted hover:bg-muted/80 text-foreground font-black text-xs rounded-xl border border-border/80 cursor-pointer"
+                                  >
+                                    Save Adjustment Notes
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Bonus Management Actions */}
+                              <div className="border-t border-border/50 pt-4 space-y-3">
+                                <h5 className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Milestone Actions</h5>
+                                
+                                {wDetail.milestoneStatus === "pending_review" && (
+                                  <div className="space-y-3 animate-in fade-in">
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-bold text-muted-foreground">Set Bonus Amount (₹) *</label>
+                                      <input 
+                                        type="number"
+                                        value={bonusAmountInput}
+                                        onChange={(e) => setBonusAmountInput(e.target.value)}
+                                        placeholder="e.g. 3000"
+                                        className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-bold"
+                                      />
                                     </div>
-
-                                    <div className="p-2.5 bg-muted/30 border border-border/80 rounded-xl space-y-1">
-                                      <span className="text-[9px] text-muted-foreground uppercase font-bold block">New Overall Rank</span>
-                                      <p className="font-mono font-black text-sm text-primary">#{simRank}</p>
-                                    </div>
-
-                                    <div className="p-2.5 bg-muted/30 border border-border/80 rounded-xl space-y-1">
-                                      <span className="text-[9px] text-muted-foreground uppercase font-bold block">Simulated Badge</span>
-                                      <p className="font-bold text-xs uppercase text-amber-500">{simBadge}</p>
-                                    </div>
-
-                                    <div className="p-2.5 bg-muted/30 border border-border/80 rounded-xl space-y-1">
-                                      <span className="text-[9px] text-muted-foreground uppercase font-bold block">Reward Eligible</span>
-                                      <p className={`font-bold text-xs uppercase ${isSimEligible ? "text-emerald-500" : "text-muted-foreground"}`}>
-                                        {isSimEligible ? "Yes" : "No"}
-                                      </p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <button
+                                        onClick={() => handleMilestoneAction("reject", wDetail.id)}
+                                        disabled={updatingMilestone}
+                                        className="py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow cursor-pointer border-none"
+                                      >
+                                        Reject Request
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          if (!bonusAmountInput) {
+                                            alert("Please set a bonus amount.");
+                                            return;
+                                          }
+                                          handleMilestoneAction("approve", wDetail.id);
+                                        }}
+                                        disabled={updatingMilestone}
+                                        className="py-2.5 bg-primary text-primary-foreground font-black text-xs rounded-xl shadow cursor-pointer border-none"
+                                      >
+                                        Approve Milestone
+                                      </button>
                                     </div>
                                   </div>
+                                )}
 
-                                  <div className="flex gap-2 pt-1">
+                                {wDetail.milestoneStatus === "approved" && (
+                                  <p className="text-[10px] text-indigo-500 italic font-bold text-center py-2 bg-indigo-500/5 rounded-xl border border-indigo-500/10">
+                                    Milestone approved. Waiting for partner to submit withdrawal bank / UPI details.
+                                  </p>
+                                )}
+
+                                {wDetail.milestoneStatus === "withdrawal_requested" && wDetail.milestoneWithdrawalDetails && (
+                                  <div className="space-y-3.5 animate-in fade-in bg-purple-500/5 border border-purple-500/10 p-3.5 rounded-2xl">
+                                    <div className="space-y-1.5 text-[11px] text-foreground">
+                                      <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest block">Withdrawal Method: {wDetail.milestoneWithdrawalDetails.method.toUpperCase()}</span>
+                                      
+                                      {wDetail.milestoneWithdrawalDetails.method === "upi" ? (
+                                        <p><strong>UPI ID:</strong> <span className="font-mono">{wDetail.milestoneWithdrawalDetails.upiId}</span></p>
+                                      ) : (
+                                        <div className="space-y-1 font-mono text-[10px]">
+                                          <p><strong>Holder:</strong> {wDetail.milestoneWithdrawalDetails.holderName}</p>
+                                          <p><strong>Bank:</strong> {wDetail.milestoneWithdrawalDetails.bankName}</p>
+                                          <p><strong>A/C:</strong> {wDetail.milestoneWithdrawalDetails.accountNumber}</p>
+                                          <p><strong>IFSC:</strong> {wDetail.milestoneWithdrawalDetails.ifsc}</p>
+                                        </div>
+                                      )}
+                                      
+                                      <p className="border-t border-border/30 pt-1.5 font-bold">Approved Bonus Amount: <span className="text-primary font-mono">₹{wDetail.milestoneBonusAmount}</span></p>
+                                    </div>
+
+                                    <div className="space-y-1.5 pt-1">
+                                      <label className="text-[10px] font-bold text-muted-foreground">Payment Reference Number *</label>
+                                      <input 
+                                        type="text"
+                                        value={referenceNumberInput}
+                                        onChange={(e) => setReferenceNumberInput(e.target.value)}
+                                        placeholder="e.g. TXN1827492749"
+                                        className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground font-bold"
+                                      />
+                                    </div>
+
                                     <button
                                       onClick={() => {
-                                        setSimRatingOffset(0.0);
-                                        setSimCompletedOffset(0);
-                                        setSimRejectedOffset(0);
-                                        setSimComplaintsOffset(0);
-                                        setSimAcceptanceRateOffset(0);
+                                        if (!referenceNumberInput) {
+                                          alert("Reference number is required to close transfer transaction.");
+                                          return;
+                                        }
+                                        handleMilestoneAction("pay", wDetail.id);
                                       }}
-                                      className="w-full py-2 bg-muted hover:bg-muted/80 text-foreground font-bold text-xs rounded-xl border border-border/80 cursor-pointer"
+                                      disabled={updatingMilestone}
+                                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow cursor-pointer border-none"
                                     >
-                                      Reset Simulation
+                                      Approve & Mark Paid Successfully
                                     </button>
                                   </div>
-                                </div>
+                                )}
+
+                                {wDetail.milestoneStatus === "paid" && (
+                                  <p className="text-[10px] text-emerald-500 font-bold text-center py-2 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                                    ✓ Milestone Paid Successfully. TXN Ref: {wDetail.milestonePaymentDetails?.referenceNumber || "N/A"}
+                                  </p>
+                                )}
+
+                                {(!wDetail.milestoneStatus || wDetail.milestoneStatus === "in_progress") && (
+                                  <p className="text-[10px] text-muted-foreground italic text-center py-2 bg-muted/40 rounded-xl">
+                                    Milestone target in progress. Active milestone is {wDetail.currentMilestone || 100} Jobs.
+                                  </p>
+                                )}
                               </div>
-                            );
-                          })() : (
-                            <p className="text-xs text-muted-foreground text-center py-6">
-                              Click on a worker from the scoreboard list on the left to load metric adjustments.
-                            </p>
-                          )}
-                        </div>
 
-                        {/* Social Hall of Fame archives section */}
-                        <div className="bg-card border border-border/60 rounded-3xl p-5 space-y-4 shadow-sm">
-                          <div className="border-b border-border/50 pb-3">
-                            <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
-                              <Medal className="w-4 h-4 text-emerald-500" style={{ animationDuration: "2s" }} /> Worker Hall of Fame
-                            </h3>
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                              History of top Aurangabad professionals monthly winner records.
-                            </p>
-                          </div>
-
-                          <div className="space-y-3">
-                            {/* Archive list fallback if hall of fame records not parsed */}
-                            <div className="p-3.5 bg-[#1C1816]/30 border border-border/80 rounded-2xl space-y-3">
-                              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block">July 2026 Archived Winners</span>
-                              <div className="space-y-2">
-                                {top5Workers.map((win, idx) => (
-                                  <div key={idx} className="flex justify-between items-center text-[10px]">
-                                    <span className="font-bold">{win.name} ({getServiceName(win.serviceType)})</span>
-                                    <span className="font-mono text-emerald-500 font-bold">Score {win.serveScore}</span>
+                              {/* Milestone History list */}
+                              <div className="border-t border-border/50 pt-4 space-y-2">
+                                <h5 className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Milestone History</h5>
+                                {workerHistory.length === 0 ? (
+                                  <p className="text-[10px] text-muted-foreground italic">No historical payouts registered.</p>
+                                ) : (
+                                  <div className="space-y-1.5 font-mono text-[9px] text-muted-foreground">
+                                    {workerHistory.map((h: any, i: number) => (
+                                      <div key={i} className="flex justify-between py-1 border-b border-border/20">
+                                        <span>{h.milestone} Jobs Milestone</span>
+                                        <span className="text-emerald-500 font-bold">₹{h.bonusAmount || "CONFIDENTIAL"} (PAID)</span>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
+                                )}
                               </div>
                             </div>
-                          </div>
-                        </div>
+                          );
+                        })() : (
+                          <p className="text-xs text-muted-foreground text-center py-6">
+                            Click on a service partner from the left list to load metric calculations and payment audit panel.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
               })()}
 
-              {/* Tab 4: Complaints */}
+              {/* Tab 4: Complaints */}  {/* Tab 4: Complaints */}
               {activeTab === "complaints" && (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">

@@ -128,11 +128,27 @@ export async function POST(req: Request) {
           updatedAt: FieldValue.serverTimestamp()
         });
 
-        transaction.update(workerRef, {
+        const currentMilestoneJobs = wData.milestoneCompletedJobs || 0;
+        const currentMilestoneStatus = wData.milestoneStatus || "in_progress";
+        const currentMilestoneTarget = wData.currentMilestone || 100;
+        const currentRating = wData.rating || 5.0;
+
+        let workerUpdates: any = {
           totalCompletedJobs: currentCompleted + 1,
           activeJobId: null, // Clear active job slot
           updatedAt: FieldValue.serverTimestamp()
-        });
+        };
+
+        if (currentMilestoneStatus === "in_progress") {
+          const nextCompletedCount = currentMilestoneJobs + 1;
+          workerUpdates.milestoneCompletedJobs = nextCompletedCount;
+          if (nextCompletedCount >= currentMilestoneTarget && currentRating >= 4.0) {
+            workerUpdates.milestoneStatus = "pending_review";
+            workerUpdates.milestoneAchievedAt = FieldValue.serverTimestamp();
+          }
+        }
+
+        transaction.update(workerRef, workerUpdates);
 
         return { message: "Job marked as completed successfully." };
 
