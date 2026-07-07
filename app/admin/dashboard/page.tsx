@@ -1814,8 +1814,23 @@ export default function AdminDashboardPage() {
                               return (
                                 <tr key={worker.id} className="hover:bg-muted/10 transition-colors">
                                   <td className="px-6 py-4">
-                                    <div className="font-semibold text-foreground">{worker.name}</div>
-                                    <div className="text-xs text-muted-foreground font-mono">{worker.mobile}</div>
+                                    <div className="flex items-center gap-3">
+                                      {worker.imageUrl ? (
+                                        <img 
+                                          src={worker.imageUrl} 
+                                          alt={worker.name} 
+                                          className="w-10 h-10 rounded-full border border-border object-cover bg-muted shrink-0" 
+                                        />
+                                      ) : (
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black shrink-0">
+                                          {worker.name.charAt(0).toUpperCase()}
+                                        </div>
+                                      )}
+                                      <div>
+                                        <div className="font-semibold text-foreground">{worker.name}</div>
+                                        <div className="text-xs text-muted-foreground font-mono">{worker.mobile}</div>
+                                      </div>
+                                    </div>
                                   </td>
                                   <td className="px-6 py-4 font-bold text-primary">
                                     {getServiceName(worker.serviceType)}
@@ -2018,64 +2033,279 @@ export default function AdminDashboardPage() {
                   }
                 };
 
-                // Trigger App Appreciation Certificate Download (Simulated PDF download container)
+                // Trigger App Appreciation Certificate Download (Beautiful HTML5 Canvas PNG rendering)
                 const downloadCertificate = (worker: any) => {
-                  const content = `
-                  ==================================================
-                                SERVEGO APPRECIATION CERTIFICATE
-                  ==================================================
-                  
-                  ServeGo proudly recognizes:
-                  
-                                   ${worker.name.toUpperCase()}
-                  
-                  as one of the Top 5 Performing Professionals in Aurangabad
-                  for the month of July 2026.
-                  
-                  Category: ${getServiceName(worker.serviceType)}
-                  Tier Badge: ${worker.badge}
-                  ServeScore: ${worker.serveScore} Points
-                  
-                  Thank you for your outstanding service, professionalism and dedication.
-                  
-                  Authorized Seal & Signature:
-                  [ServeGo Admin Executive Office]
-                  ==================================================
-                  `;
-                  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `Appreciation_Certificate_${worker.name.replace(/\s+/g, "_")}.txt`;
-                  a.click();
-                  URL.revokeObjectURL(url);
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 1120;
+                  canvas.height = 800;
+                  const ctx = canvas.getContext("2d");
+                  if (!ctx) return;
+
+                  const drawDesign = (photoImg: HTMLImageElement | null) => {
+                    // Draw dark premium background
+                    const grad = ctx.createRadialGradient(560, 400, 100, 560, 400, 700);
+                    grad.addColorStop(0, "#2F2521");
+                    grad.addColorStop(1, "#15100E");
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, 1120, 800);
+
+                    // Gold double border
+                    ctx.strokeStyle = "#D4AF37";
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(30, 30, 1060, 740);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(42, 42, 1036, 716);
+
+                    // Corner decorations
+                    const drawCornerDeco = (x: number, y: number, rotation: number) => {
+                      ctx.save();
+                      ctx.translate(x, y);
+                      ctx.rotate(rotation);
+                      ctx.strokeStyle = "#D4AF37";
+                      ctx.lineWidth = 3;
+                      ctx.beginPath();
+                      ctx.moveTo(0, 30);
+                      ctx.lineTo(0, 0);
+                      ctx.lineTo(30, 0);
+                      ctx.stroke();
+                      ctx.restore();
+                    };
+                    drawCornerDeco(45, 45, 0);
+                    drawCornerDeco(1075, 45, Math.PI / 2);
+                    drawCornerDeco(1075, 755, Math.PI);
+                    drawCornerDeco(45, 755, -Math.PI / 2);
+
+                    // Header Text
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.textAlign = "center";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.fillText("SERVEGO APPRECIATION AWARDS", 560, 110);
+
+                    // Title
+                    const titleGrad = ctx.createLinearGradient(300, 0, 820, 0);
+                    titleGrad.addColorStop(0, "#D4AF37");
+                    titleGrad.addColorStop(0.5, "#F3E5AB");
+                    titleGrad.addColorStop(1, "#AA7C11");
+                    ctx.fillStyle = titleGrad;
+                    ctx.font = "bold 36px Georgia, serif";
+                    ctx.fillText("CERTIFICATE OF APPRECIATION", 560, 175);
+
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "italic 16px Georgia, serif";
+                    ctx.fillText("This is proudly presented to", 560, 240);
+
+                    // Name
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "bold 44px Georgia, serif";
+                    ctx.fillText(worker.name.toUpperCase(), 560, 310);
+                    
+                    // Decorative line below name
+                    ctx.strokeStyle = "#D4AF37";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(460, 335);
+                    ctx.lineTo(660, 335);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(560, 335, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = "#D4AF37";
+                    ctx.fill();
+
+                    // Citation
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "16px sans-serif";
+                    ctx.fillText("For outstanding performance and dedication as one of the", 560, 390);
+                    ctx.fillText("Top 5 Performing Professionals in Aurangabad for the current cycle.", 560, 420);
+
+                    // Embed Photo if present
+                    if (photoImg) {
+                      ctx.save();
+                      ctx.beginPath();
+                      ctx.arc(560, 520, 50, 0, Math.PI * 2);
+                      ctx.clip();
+                      ctx.drawImage(photoImg, 510, 470, 100, 100);
+                      ctx.restore();
+                      
+                      // Circle border
+                      ctx.strokeStyle = "#D4AF37";
+                      ctx.lineWidth = 3;
+                      ctx.beginPath();
+                      ctx.arc(560, 520, 51, 0, Math.PI * 2);
+                      ctx.stroke();
+                    } else {
+                      // Draw Gold Seal Medallion instead
+                      ctx.fillStyle = "#D4AF37";
+                      ctx.beginPath();
+                      ctx.arc(560, 520, 35, 0, Math.PI * 2);
+                      ctx.fill();
+                      ctx.fillStyle = "#15100E";
+                      ctx.font = "bold 18px sans-serif";
+                      ctx.fillText("SEAL", 560, 526);
+                    }
+
+                    // Score / Category table
+                    ctx.fillStyle = "#1C1816";
+                    ctx.fillRect(260, 600, 600, 60);
+                    ctx.strokeStyle = "#4D423C";
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(260, 600, 600, 60);
+
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "bold 13px sans-serif";
+                    ctx.textAlign = "left";
+                    ctx.fillText(`CATEGORY: ${getServiceName(worker.serviceType).toUpperCase()}`, 290, 635);
+                    ctx.textAlign = "center";
+                    ctx.fillText(`TIER: ${worker.badge.toUpperCase()}`, 560, 635);
+                    ctx.textAlign = "right";
+                    ctx.fillText(`SERVESCORE: ${worker.serveScore} PTS`, 830, 635);
+
+                    // Signatures
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "italic 13px Georgia, serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("ServeGo Admin Team", 560, 715);
+                    ctx.font = "9px sans-serif";
+                    ctx.fillText("VERIFIED ON BLOCKCHAIN & FIRESTORE DATABASE", 560, 735);
+
+                    // Trigger download
+                    const url = canvas.toDataURL("image/png");
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `Appreciation_Certificate_${worker.name.replace(/\s+/g, "_")}.png`;
+                    a.click();
+                  };
+
+                  if (worker.imageUrl) {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = worker.imageUrl;
+                    img.onload = () => drawDesign(img);
+                    img.onerror = () => drawDesign(null);
+                  } else {
+                    drawDesign(null);
+                  }
                 };
 
-                // Generate Social Winner Poster (HTML square visualization txt canvas)
+                // Generate Social Winner Poster (Beautiful HTML5 Canvas PNG rendering)
                 const generateWinnerPoster = (worker: any) => {
-                  const poster = `
-                  +----------------------------------------------+
-                  |               SERVEGO REWARDS                |
-                  |          [ TOP PERFORMER OF THE MONTH ]      |
-                  +----------------------------------------------+
-                  |                                              |
-                  |   Name: ${worker.name.padEnd(25)}    |
-                  |   Category: ${getServiceName(worker.serviceType).padEnd(21)}    |
-                  |   Quality Tier: ${worker.badge.padEnd(17)}    |
-                  |   Overall Rating: ${worker.rating.toFixed(1)} ★                     |
-                  |                                              |
-                  |   "Providing Elite Auragabad Services"       |
-                  +----------------------------------------------+
-                  |           ServeGo.in - Premium PWA           |
-                  +----------------------------------------------+
-                  `;
-                  const blob = new Blob([poster], { type: "text/plain;charset=utf-8" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `Winner_Poster_${worker.name.replace(/\s+/g, "_")}.txt`;
-                  a.click();
-                  URL.revokeObjectURL(url);
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 1000;
+                  canvas.height = 1000;
+                  const ctx = canvas.getContext("2d");
+                  if (!ctx) return;
+
+                  const drawPosterDesign = (photoImg: HTMLImageElement | null) => {
+                    // Deep gradient backdrop
+                    const grad = ctx.createRadialGradient(500, 500, 50, 500, 500, 650);
+                    grad.addColorStop(0, "#332621");
+                    grad.addColorStop(1, "#140F0E");
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, 1000, 1000);
+
+                    // Gold Border Outline
+                    ctx.strokeStyle = "#D4AF37";
+                    ctx.lineWidth = 8;
+                    ctx.strokeRect(40, 40, 920, 920);
+
+                    // Inner border lines
+                    ctx.strokeStyle = "#4D423C";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(55, 55, 890, 890);
+
+                    // Header Tag
+                    ctx.fillStyle = "#D4AF37";
+                    ctx.fillRect(350, 80, 300, 40);
+                    ctx.fillStyle = "#140F0E";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("SERVEGO TOP PROFESSIONAL", 500, 105);
+
+                    // Main image frame (Large circle in center)
+                    const imgX = 500;
+                    const imgY = 380;
+                    const imgRadius = 140;
+
+                    if (photoImg) {
+                      ctx.save();
+                      ctx.beginPath();
+                      ctx.arc(imgX, imgY, imgRadius, 0, Math.PI * 2);
+                      ctx.clip();
+                      ctx.drawImage(photoImg, imgX - imgRadius, imgY - imgRadius, imgRadius * 2, imgRadius * 2);
+                      ctx.restore();
+
+                      // Glowing frame
+                      ctx.strokeStyle = "#D4AF37";
+                      ctx.lineWidth = 8;
+                      ctx.beginPath();
+                      ctx.arc(imgX, imgY, imgRadius + 4, 0, Math.PI * 2);
+                      ctx.stroke();
+                    } else {
+                      // fallback star icon representation
+                      ctx.fillStyle = "#D4AF37";
+                      ctx.beginPath();
+                      ctx.arc(imgX, imgY, imgRadius, 0, Math.PI * 2);
+                      ctx.fill();
+                      
+                      ctx.fillStyle = "#140F0E";
+                      ctx.font = "bold 90px Georgia, serif";
+                      ctx.fillText("★", imgX, imgY + 30);
+                    }
+
+                    // Service badge below photo
+                    ctx.fillStyle = "#D4AF37";
+                    ctx.fillRect(380, 550, 240, 35);
+                    ctx.fillStyle = "#1C1816";
+                    ctx.font = "bold 13px sans-serif";
+                    ctx.fillText(getServiceName(worker.serviceType).toUpperCase(), 500, 573);
+
+                    // Name of Professional
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "bold 46px Georgia, serif";
+                    ctx.fillText(worker.name, 500, 640);
+
+                    // Badge / Rating Details
+                    ctx.fillStyle = "#A89F95";
+                    ctx.font = "20px sans-serif";
+                    ctx.fillText(`Quality Rating: ${worker.rating.toFixed(1)} ★   |   Completed Jobs: ${worker.totalCompletedJobs}`, 500, 690);
+
+                    // Performance Tier Info
+                    ctx.fillStyle = "#D4AF37";
+                    ctx.font = "bold 26px sans-serif";
+                    ctx.fillText(`SERVESCORE TIER: ${worker.badge.toUpperCase()}`, 500, 750);
+
+                    // Footer branding
+                    ctx.strokeStyle = "#4D423C";
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(250, 800);
+                    ctx.lineTo(750, 800);
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "italic 16px Georgia, serif";
+                    ctx.fillText('"Delivering safety, trust, and premium quality service to Aurangabad"', 500, 840);
+
+                    ctx.fillStyle = "#FAF6F1";
+                    ctx.font = "bold 15px sans-serif";
+                    ctx.fillText("WWW.SERVEGO.CO.IN", 500, 900);
+
+                    // Trigger download
+                    const url = canvas.toDataURL("image/png");
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `Winner_Poster_${worker.name.replace(/\s+/g, "_")}.png`;
+                    a.click();
+                  };
+
+                  if (worker.imageUrl) {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = worker.imageUrl;
+                    img.onload = () => drawPosterDesign(img);
+                    img.onerror = () => drawPosterDesign(null);
+                  } else {
+                    drawPosterDesign(null);
+                  }
                 };
 
                 // Calculate active filtered list

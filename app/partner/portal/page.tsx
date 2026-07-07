@@ -569,10 +569,24 @@ export default function PartnerPortalPage() {
       
       {/* Top Standalone PWA bar */}
       <header className="px-5 py-4 border-b border-[#4D423C]/50 flex justify-between items-center bg-[#28211E]/90 sticky top-0 z-30 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-ping" />
+        <div className="flex items-center gap-3">
+          {/* Profile Photo */}
+          {partnerDetails?.imageUrl ? (
+            <img 
+              src={partnerDetails.imageUrl} 
+              alt={partner.name} 
+              className="w-10 h-10 rounded-full border border-[#4D423C] object-cover bg-[#1C1816]" 
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-black">
+              {partner.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
-            <h1 className="text-sm font-black tracking-tight">{partner.name}</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h1 className="text-sm font-black tracking-tight">{partner.name}</h1>
+            </div>
             <p className="text-[10px] text-primary uppercase tracking-widest mt-0.5 font-bold">
               {getPartnerJobLabel(partner.serviceType)}
             </p>

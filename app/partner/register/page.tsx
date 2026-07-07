@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Lock, Phone, ShieldAlert, UserPlus, User, Briefcase, MapPin, CalendarDays } from "lucide-react";
+import { Lock, Phone, ShieldAlert, UserPlus, User, Briefcase, MapPin, CalendarDays, Camera } from "lucide-react";
 import { SERVICES_LIST } from "@/lib/services";
+import { compressProfilePhoto } from "@/lib/imageCompressor";
 
 export default function PartnerRegisterPage() {
   const router = useRouter();
@@ -20,6 +21,9 @@ export default function PartnerRegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [servicesList, setServicesList] = useState<any[]>(SERVICES_LIST);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageError, setImageError] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     // Load database services config
@@ -60,6 +64,24 @@ export default function PartnerRegisterPage() {
     }
   }, []);
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageError("");
+    setUploadingImage(true);
+    try {
+      const compressed = await compressProfilePhoto(file);
+      setImageUrl(compressed);
+    } catch (err) {
+      console.error("Compression error:", err);
+      setImageError("Failed to compress profile photo. Try another image.");
+      setImageUrl("");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -69,6 +91,12 @@ export default function PartnerRegisterPage() {
     const cleanName = name.trim();
     const cleanArea = area.trim().toLowerCase();
     const cleanPassword = password.trim();
+
+    if (!imageUrl) {
+      setError("Please upload your profile photo.");
+      setLoading(false);
+      return;
+    }
 
     if (!cleanName || !cleanMobile || !cleanPassword || !serviceType || !cleanArea) {
       setError("Please fill out all required fields.");
@@ -111,6 +139,7 @@ export default function PartnerRegisterPage() {
         experience: parseInt(experience, 10) || 1,
         email: "",
         password: cleanPassword,
+        imageUrl: imageUrl,
         rating: 5.0,
         totalReviews: 0,
         totalAssignedJobs: 0,
@@ -254,6 +283,35 @@ export default function PartnerRegisterPage() {
                     placeholder="e.g. Ranchi, Patna, Delhi"
                     className="w-full pl-11 pr-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm focus:bg-background transition-all"
                   />
+                </div>
+              </div>
+
+              {/* Profile Photo Upload */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground/80">Profile Photo *</label>
+                <div className="flex items-center gap-4">
+                  {imageUrl ? (
+                    <img 
+                      src={imageUrl} 
+                      alt="Profile preview" 
+                      className="w-14 h-14 rounded-full border border-border/80 object-cover bg-muted" 
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-muted/40 border border-border/80 flex items-center justify-center text-muted-foreground">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <input
+                      type="file"
+                      required
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="block w-full text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 file:cursor-pointer"
+                    />
+                    {uploadingImage && <span className="text-[10px] text-primary animate-pulse font-bold block">Optimizing image...</span>}
+                    {imageError && <span className="text-[10px] text-destructive block">{imageError}</span>}
+                  </div>
                 </div>
               </div>
 
