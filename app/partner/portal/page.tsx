@@ -105,6 +105,7 @@ export default function PartnerPortalPage() {
   // Real-time states
   const [availableLeads, setAvailableLeads] = useState<any[]>([]);
   const [activeLead, setActiveLead] = useState<any>(null);
+  const [partnerDetails, setPartnerDetails] = useState<any>(null);
 
   // Dev diagnostic states
   const [debugInfo, setDebugInfo] = useState<any>({
@@ -183,14 +184,77 @@ export default function PartnerPortalPage() {
     setLoading(false);
   }, []);
 
-  // Request browser Notification permissions
+  // Setup Push Notification Subscription
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      if (Notification.permission === "default") {
-        Notification.requestPermission();
+    if (!partner?.id) return;
+
+    const setupPushSubscription = async () => {
+      try {
+        if ("serviceWorker" in navigator && "PushManager" in window) {
+          const reg = await navigator.serviceWorker.ready;
+          
+          const permission = await Notification.requestPermission();
+          if (permission !== "granted") {
+            console.warn("Notification permission denied by partner.");
+            return;
+          }
+
+          let sub = await reg.pushManager.getSubscription();
+
+          const urlBase64ToUint8Array = (base64String: string) => {
+            const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+              outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+          };
+
+          const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          if (!vapidPublicKey) {
+            console.warn("NEXT_PUBLIC_VAPID_PUBLIC_KEY is not defined in env.");
+            return;
+          }
+
+          const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+
+          if (!sub) {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: convertedKey,
+            });
+          }
+
+          const subscriptionJson = JSON.parse(JSON.stringify(sub));
+          
+          const workerRef = doc(db, "workers", partner.id);
+          await updateDoc(workerRef, {
+            pushSubscription: subscriptionJson,
+            lastActivity: serverTimestamp(),
+          });
+          
+          console.log("Web Push subscription registered successfully!");
+        }
+      } catch (pushErr) {
+        console.error("Error setting up Web Push subscription:", pushErr);
       }
-    }
-  }, []);
+    };
+
+    setupPushSubscription();
+  }, [partner]);
+
+  // Subscribe to Partner Real-time details
+  useEffect(() => {
+    if (!partner?.id) return;
+    const unsubPartner = onSnapshot(doc(db, "workers", partner.id), (docSnap) => {
+      if (docSnap.exists()) {
+        setPartnerDetails(docSnap.data());
+      }
+    }, (err) => console.error("Partner details subscription failed:", err));
+    return () => unsubPartner();
+  }, [partner]);
 
   // Setup Real-time Firestore Listeners
   useEffect(() => {
@@ -362,6 +426,10 @@ export default function PartnerPortalPage() {
   // Firestore transaction accept handler
   const handleAcceptJob = async (leadId: string) => {
     if (!partner) return;
+    if (activeLead) {
+      alert("You already have an active job. Please complete your current job before accepting a new one!");
+      return;
+    }
     setErrorMsg("");
 
     try {
@@ -510,6 +578,17 @@ export default function PartnerPortalPage() {
       {/* Main UI body */}
       <main className="flex-1 flex flex-col p-5 max-w-xl mx-auto w-full space-y-6">
         
+        {/* Completed Jobs Stats Card */}
+        <div className="bg-[#28211E] border border-[#4D423C]/50 p-5 rounded-3xl flex justify-between items-center shadow-md relative overflow-hidden backdrop-blur-md">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Total Completed Work</span>
+            <p className="text-2xl font-black text-emerald-400">{partnerDetails?.totalCompletedJobs || 0} Jobs Done</p>
+          </div>
+          <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400">
+            <CheckCircle className="w-6 h-6 animate-pulse" />
+          </div>
+        </div>
+
         {/* Active Job State */}
         {activeLead ? (
           <div className="bg-[#28211E] border border-[#4D423C]/80 p-6 rounded-3xl space-y-6 shadow-xl animate-in zoom-in-95 duration-200">
@@ -812,11 +891,10 @@ export default function PartnerPortalPage() {
         </div>
       )}
 
-      {/* Dev Diagnostics Footer */}
-      <footer className="mt-auto p-4 bg-black/40 border-t border-[#4D423C]/30 text-[10px] text-muted-foreground font-mono space-y-1 w-full text-center">
-        <p>Partner: {partner.name} | ID: {partner.id} | Cat: {partner.serviceType} (Live Query: {getLiveServiceId(partner.serviceType)})</p>
-        <p>Active Match: {debugInfo.activeCount} | Available Match: {debugInfo.availableCount}</p>
-        {debugInfo.error && <p className="text-rose-400 font-bold">Error: {debugInfo.error}</p>}
+      {/* Footer Branding */}
+      <footer className="mt-auto p-6 bg-black/40 border-t border-[#4D423C]/30 text-[10px] text-muted-foreground font-bold tracking-widest w-full text-center uppercase">
+        <p>© 2026 ServeGo. All Rights Reserved. Partner Portal.</p>
+        {debugInfo.error && <p className="text-rose-400 font-bold font-mono mt-1">Error: {debugInfo.error}</p>}
       </footer>
 
     </div>

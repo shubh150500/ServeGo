@@ -456,7 +456,7 @@ export default function BookServicePage({ params }: PageProps) {
           try {
             setLoading(true);
 
-            // 4. Verify signature on the serverless API
+            // 4. Verify signature on the serverless API (this will finalize DB records and broadcast push alerts)
             const verifyResponse = await fetch("/api/verify", {
               method: "POST",
               headers: {
@@ -466,6 +466,7 @@ export default function BookServicePage({ params }: PageProps) {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+                booking_id: createdBookingId,
               }),
             });
 
@@ -474,36 +475,6 @@ export default function BookServicePage({ params }: PageProps) {
             if (!verifyResponse.ok || !verifyData.verified) {
               throw new Error(verifyData.error || "Payment signature verification failed");
             }
-
-            // 5. Update existing Booking document
-            const targetBookingRef = doc(db, "bookings", createdBookingId);
-            await updateDoc(targetBookingRef, {
-              status: "NEW",
-              assuranceFeePaid: true,
-              razorpayPaymentId: response.razorpay_payment_id,
-              updatedAt: serverTimestamp(),
-            });
-
-            // Create Payment document
-            const paymentDoc = {
-              bookingId: createdBookingId,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              amount: payableAmount,
-              customerId: "", // guest checkout
-              status: "captured",
-              createdAt: serverTimestamp(),
-            };
-
-            await addDoc(collection(db, "payments"), paymentDoc);
-
-            // Create Customer record if not exists
-            const customerDoc = {
-              name: name,
-              mobile: mobile,
-              createdAt: serverTimestamp(),
-            };
-            await addDoc(collection(db, "customers"), customerDoc);
 
             // Clear pending booking references in localStorage
             localStorage.removeItem("pending_booking_id");

@@ -1787,7 +1787,9 @@ export default function AdminDashboardPage() {
                                   <td className="px-6 py-4">
                                     <div className="space-y-1">
                                       <span className={`px-2 py-0.5 rounded-full text-xs font-black uppercase ${
-                                        worker.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                                        worker.status === "active" ? "bg-emerald-100 text-emerald-800" :
+                                        worker.status === "pending" ? "bg-amber-100 text-amber-800 animate-pulse" :
+                                        "bg-rose-100 text-rose-800"
                                       }`}>
                                         {worker.status}
                                       </span>
@@ -1796,7 +1798,7 @@ export default function AdminDashboardPage() {
                                       </span>
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 text-right space-x-2">
+                                  <td className="px-6 py-4 text-right space-x-2 font-medium">
                                     <button
                                       onClick={() => {
                                         setEditingWorker(worker);
@@ -1813,10 +1815,17 @@ export default function AdminDashboardPage() {
                                       Edit
                                     </button>
 
-                                    {worker.status === "active" ? (
+                                    {worker.status === "pending" ? (
+                                      <button
+                                        onClick={() => handleWorkerStatusChange(worker.id, worker.name, "active")}
+                                        className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer animate-pulse"
+                                      >
+                                        Approve Partner
+                                      </button>
+                                    ) : worker.status === "active" ? (
                                       <button
                                         onClick={() => handleWorkerStatusChange(worker.id, worker.name, "suspended")}
-                                        className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer animate-pulse"
+                                        className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                                       >
                                         Suspend
                                       </button>
@@ -1825,7 +1834,7 @@ export default function AdminDashboardPage() {
                                         onClick={() => handleWorkerStatusChange(worker.id, worker.name, "active")}
                                         className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                                       >
-                                        Activate
+                                        Reactivate
                                       </button>
                                     )}
 

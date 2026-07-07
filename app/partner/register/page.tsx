@@ -118,29 +118,19 @@ export default function PartnerRegisterPage() {
         totalRejectedJobs: 0,
         totalCompletedJobs: 0,
         lastActivity: serverTimestamp(),
-        status: "active" as const,
+        status: "pending" as const,
         createdAt: serverTimestamp(),
       };
 
       const docRef = await addDoc(collection(db, "workers"), wDoc);
 
-      // Auto-login after registration
-      const profilePayload = {
-        id: docRef.id,
-        name: cleanName,
-        mobile: cleanMobile,
-        email: "",
-        serviceType: serviceType,
-        area: cleanArea,
-      };
-
-      localStorage.setItem("partner_profile", JSON.stringify(profilePayload));
+      localStorage.removeItem("partner_profile");
       setSuccess(true);
 
-      // Redirect to portal after brief success message
+      // Redirect to login page after brief success message
       setTimeout(() => {
-        router.push("/partner/portal");
-      }, 1500);
+        router.push("/partner/login");
+      }, 4000);
     } catch (err: any) {
       console.error("Partner registration error:", err);
       setError("Registration failed. Please check your connection and try again.");
@@ -165,8 +155,9 @@ export default function PartnerRegisterPage() {
         </div>
 
         {success && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl flex items-center gap-3 text-sm font-bold animate-in fade-in">
-            ✅ Registration successful! Redirecting to your portal...
+          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl flex flex-col gap-2 text-sm font-bold animate-in fade-in">
+            <span>🎉 Registration submitted successfully!</span>
+            <span className="text-xs font-normal text-muted-foreground">Your profile is pending administrator verification. Once approved, you can login with your mobile number. Redirecting to login page...</span>
           </div>
         )}
 

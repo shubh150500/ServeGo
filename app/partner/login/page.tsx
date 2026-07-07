@@ -77,6 +77,12 @@ export default function PartnerLoginPage() {
       const partnerDoc = querySnapshot.docs[0];
       const partnerData = partnerDoc.data();
 
+      if (partnerData.status === "pending") {
+        setError("Your registration is pending administrator approval. Please wait for verification.");
+        setLoading(false);
+        return;
+      }
+
       if (partnerData.status !== "active") {
         setError("Your partner profile is suspended or inactive. Contact administrator.");
         setLoading(false);
