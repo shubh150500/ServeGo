@@ -65,7 +65,8 @@ import {
   Medal,
   Sparkles,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  Scale
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -93,6 +94,7 @@ export default function AdminDashboardPage() {
     | "waitlist"
     | "settings"
     | "performance-dashboard"
+    | "compliance"
   >("overview");
 
   // Data State
@@ -236,6 +238,11 @@ export default function AdminDashboardPage() {
   const [complaintSearchQuery, setComplaintSearchQuery] = useState("");
   const [complaintDateFilter, setComplaintDateFilter] = useState("ALL");
   const [tempAdminNotes, setTempAdminNotes] = useState<{ [key: string]: string }>({});
+
+  // Compliance Acceptance Logs State
+  const [termsAcceptanceLogs, setTermsAcceptanceLogs] = useState<any[]>([]);
+  const [workerAgreementLogs, setWorkerAgreementLogs] = useState<any[]>([]);
+  const [complianceSearch, setComplianceSearch] = useState("");
 
   // Top level state definitions for simulation and rewards tab to prevent React Hook violations
   const [perfSearch, setPerfSearch] = useState("");
@@ -453,6 +460,24 @@ export default function AdminDashboardPage() {
           (err) => console.error("Waitlist real-time listener failed:", err)
         );
 
+        // 13. Subscribe to Terms Acceptance Logs
+        const unsubTermsAcceptance = onSnapshot(
+          query(collection(db, "terms_acceptance_logs"), orderBy("timestamp", "desc")),
+          (snap) => {
+            setTermsAcceptanceLogs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          },
+          (err) => console.error("Terms Acceptance Logs listener failed:", err)
+        );
+
+        // 14. Subscribe to Worker Agreement Logs
+        const unsubWorkerAgreement = onSnapshot(
+          query(collection(db, "worker_agreement_acceptance_logs"), orderBy("timestamp", "desc")),
+          (snap) => {
+            setWorkerAgreementLogs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          },
+          (err) => console.error("Worker Agreement Logs listener failed:", err)
+        );
+
         unsubscribes = [
           unsubBookings,
           unsubWorkers,
@@ -465,7 +490,9 @@ export default function AdminDashboardPage() {
           unsubVehicles,
           unsubToggles,
           unsubInterests,
-          unsubWaitlist
+          unsubWaitlist,
+          unsubTermsAcceptance,
+          unsubWorkerAgreement
         ];
       }
       setAuthLoading(false);
@@ -1268,6 +1295,7 @@ export default function AdminDashboardPage() {
             { id: "reviews", label: "Customer Reviews", icon: Star },
             { id: "revenue", label: "Assurance Revenue", icon: DollarSign },
             { id: "logs", label: "Audit Logs", icon: History },
+            { id: "compliance", label: "Legal & Compliance", icon: Scale },
             { id: "settings", label: "Website Settings", icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -4756,6 +4784,136 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Tab: Legal & Compliance */}
+              {activeTab === "compliance" && (() => {
+                const filteredTerms = termsAcceptanceLogs.filter(log => {
+                  if (complianceSearch.trim()) {
+                    const q = complianceSearch.trim();
+                    return log.customerMobile?.includes(q) || log.bookingId?.includes(q);
+                  }
+                  return true;
+                });
+
+                const filteredWorkerAgreements = workerAgreementLogs.filter(log => {
+                  if (complianceSearch.trim()) {
+                    const q = complianceSearch.trim();
+                    return log.workerMobile?.includes(q) || log.workerId?.includes(q) || log.workerName?.toLowerCase().includes(q.toLowerCase());
+                  }
+                  return true;
+                });
+
+                return (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div>
+                      <h2 className="text-xl font-black">Legal & Compliance Acceptance Logs</h2>
+                      <p className="text-muted-foreground text-xs mt-0.5">Audit customer terms acceptance logs and worker onboarding agreements.</p>
+                    </div>
+
+                    {/* Search Panel */}
+                    <div className="bg-card border border-border/60 p-5 rounded-3xl shadow-sm flex items-center gap-3">
+                      <Search className="w-5 h-5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search logs by mobile number, name, or booking/worker ID..."
+                        value={complianceSearch}
+                        onChange={(e) => setComplianceSearch(e.target.value)}
+                        className="flex-1 bg-transparent text-sm text-foreground focus:outline-none placeholder-muted-foreground"
+                      />
+                      {complianceSearch && (
+                        <button
+                          onClick={() => setComplianceSearch("")}
+                          className="text-xs text-muted-foreground hover:text-foreground font-semibold cursor-pointer border-none bg-transparent"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Customer Terms Acceptance Logs */}
+                      <div className="bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm flex flex-col">
+                        <div className="p-5 border-b border-border/60">
+                          <h3 className="font-black text-sm text-foreground flex items-center gap-2">
+                            <Scale className="w-4 h-4 text-primary" /> Customer Terms Acceptance Logs
+                          </h3>
+                        </div>
+                        <div className="overflow-x-auto flex-1 max-h-[500px] overflow-y-auto">
+                          <table className="w-full text-xs text-left border-collapse">
+                            <thead className="bg-muted/40 font-bold uppercase text-muted-foreground border-b border-border/60 sticky top-0 bg-card z-10">
+                              <tr>
+                                <th className="px-4 py-3">Customer Phone</th>
+                                <th className="px-4 py-3">Booking ID</th>
+                                <th className="px-4 py-3">Version</th>
+                                <th className="px-4 py-3">Timestamp</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/40">
+                              {filteredTerms.map((log) => (
+                                <tr key={log.id} className="hover:bg-muted/10 transition-colors">
+                                  <td className="px-4 py-3 font-semibold">{log.customerMobile}</td>
+                                  <td className="px-4 py-3 font-mono">{log.bookingId || "N/A"}</td>
+                                  <td className="px-4 py-3">{log.termsVersion}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">
+                                    {log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Just now"}
+                                  </td>
+                                </tr>
+                              ))}
+                              {filteredTerms.length === 0 && (
+                                <tr>
+                                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground italic">
+                                    No customer terms logs found.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Worker Agreement Logs */}
+                      <div className="bg-card border border-border/60 rounded-3xl overflow-hidden shadow-sm flex flex-col">
+                        <div className="p-5 border-b border-border/60">
+                          <h3 className="font-black text-sm text-foreground flex items-center gap-2">
+                            <Scale className="w-4 h-4 text-emerald-500" /> Worker Agreement Onboarding Logs
+                          </h3>
+                        </div>
+                        <div className="overflow-x-auto flex-1 max-h-[500px] overflow-y-auto">
+                          <table className="w-full text-xs text-left border-collapse">
+                            <thead className="bg-muted/40 font-bold uppercase text-muted-foreground border-b border-border/60 sticky top-0 bg-card z-10">
+                              <tr>
+                                <th className="px-4 py-3">Worker Name</th>
+                                <th className="px-4 py-3">Phone</th>
+                                <th className="px-4 py-3">Version</th>
+                                <th className="px-4 py-3">Timestamp</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/40">
+                              {filteredWorkerAgreements.map((log) => (
+                                <tr key={log.id} className="hover:bg-muted/10 transition-colors">
+                                  <td className="px-4 py-3 font-semibold">{log.workerName}</td>
+                                  <td className="px-4 py-3 font-mono">{log.workerMobile}</td>
+                                  <td className="px-4 py-3">{log.agreementVersion}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">
+                                    {log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Just now"}
+                                  </td>
+                                </tr>
+                              ))}
+                              {filteredWorkerAgreements.length === 0 && (
+                                <tr>
+                                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground italic">
+                                    No worker onboarding logs found.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );

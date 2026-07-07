@@ -1,38 +1,33 @@
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
-import { ArrowLeft, Scale, AlertTriangle, ShieldCheck, UserCheck, HelpCircle } from "lucide-react";
+import { ArrowLeft, RefreshCw, XCircle, Clock, CreditCard, ShieldCheck } from "lucide-react";
 
 export const metadata = {
-  title: "Terms & Conditions | ServeGo",
-  description: "ServeGo terms and conditions governing the use of our home‑services marketplace platform.",
+  title: "Refund Policy | ServeGo",
+  description: "ServeGo refund and cancellation policy explaining how the Service Assurance Fee is handled during changes or cancellations.",
 };
 
-export default function TermsPage() {
-  const sections = [
+export default function RefundPolicyPage() {
+  const rules = [
     {
-      icon: <Scale className="w-6 h-6 text-primary" />,
-      title: "1. Acceptance of Terms",
-      content: "By accessing or using the ServeGo platform, website, or mobile interface, you agree to be bound by these Terms & Conditions and all applicable laws. If you do not agree, you must immediately cease all use of our platform.",
+      icon: <Clock className="w-6 h-6 text-primary" />,
+      title: "1. Service Assurance Fee Overview",
+      content: "To maintain qualified partners, perform background checks, and prevent slot hoarding, ServeGo charges a Service Assurance Fee at the time of placing a service request. This fee is collected securely via Razorpay and holds the booking slot for your selected professional.",
     },
     {
-      icon: <AlertTriangle className="w-6 h-6 text-primary" />,
-      title: "2. ServeGo Platform Disclaimer",
-      content: "ServeGo operates solely as a digital marketplace connecting customers with independent service professionals (workers). ServeGo is NOT an employer of these service professionals, does NOT act as an agency, and is NOT a contractor. We make no representations or warranties regarding the quality, safety, reliability, or legality of the services provided by third-party professionals. Any contract for service delivery is directly between the customer and the worker. ServeGo explicitly disclaims all liability for any damages, losses, disputes, or quality issues arising from services rendered.",
+      icon: <XCircle className="w-6 h-6 text-primary" />,
+      title: "2. Customer-Initiated Cancellation",
+      content: "If you cancel a booking, the eligibility and percentage of the refund for the Service Assurance Fee is determined by the time window of cancellation:\n\n• Cancelled 24 Hours or More Before Scheduled Time: Eligible for a 100% refund of the Service Assurance Fee.\n• Cancelled Between 2 Hours and 24 Hours Before Scheduled Time: Eligible for a 50% refund of the Service Assurance Fee.\n• Cancelled Less Than 2 Hours Before Scheduled Time: No refund is issued (this covers administrative booking costs and potential loss of opportunity for the assigned partner).",
     },
     {
-      icon: <UserCheck className="w-6 h-6 text-primary" />,
-      title: "3. Customer Responsibilities",
-      content: "As a customer of ServeGo, you agree to: (a) Provide complete, accurate, and truthful information during registration and booking; (b) Pay the non-refundable Service Assurance Fee via Razorpay to secure booking slots; (c) Direct all labor fee negotiations and payments honestly with the assigned professional post-job completion; (d) Maintain a safe, harassment-free, and respectful environment for the service provider at your premises; and (e) Report any fraud, security breaches, or damage claims immediately within 24 hours of job completion.",
+      icon: <RefreshCw className="w-6 h-6 text-primary" />,
+      title: "3. ServeGo or Worker-Initiated Cancellation",
+      content: "If a scheduled service is cancelled by ServeGo or the assigned worker due to unforeseen circumstances, emergency, or unavailability of resources, you will be issued a 100% refund of the Service Assurance Fee automatically. Our support desk will also assist you in booking an alternative slot if requested.",
     },
     {
-      icon: <ShieldCheck className="w-6 h-6 text-primary" />,
-      title: "4. Payments, Escrow & Fees",
-      content: "ServeGo requires a Service Assurance Fee to keep the platform running and cover safety verifications. The Service Assurance Fee is collected at booking confirmation via Razorpay. The final service labor charge is settled directly with the worker in cash or direct transfer. You must not attempt to bypass the platform fee structure or request workers to work off-platform to avoid fees, which may lead to account suspension.",
-    },
-    {
-      icon: <HelpCircle className="w-6 h-6 text-primary" />,
-      title: "5. Governing Law & Dispute Resolution",
-      content: "These terms are governed by and construed in accordance with the laws of India. Any disputes, actions, or legal proceedings arising out of or in connection with the platform or these terms shall be subject to the exclusive jurisdiction of the competent courts in Bihar, India.",
+      icon: <CreditCard className="w-6 h-6 text-primary" />,
+      title: "4. Processing Timelines",
+      content: "All eligible refunds are auto-credited back to the original payment source (UPI, Credit/Debit Card, or Net Banking) via Razorpay. Once initiated, refunds take 5 to 7 business days to reflect in your account statement, depending on your bank's processing cycles.",
     },
   ];
 
@@ -62,62 +57,61 @@ export default function TermsPage() {
         </div>
       </header>
 
-      {/* Hero section */}
+      {/* Main Content */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
         <div className="text-center mb-12">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary mb-4 border border-primary/20">
-            Legal Agreement
+            Billing & Cancellations
           </span>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4">
-            Terms & Conditions
+            Refund & Cancellation Policy
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">
-            Please read these terms carefully before accessing or using our services.
+            Understand standard cancellations, fee refunds, and transaction processing windows.
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             Last Updated: {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
 
-        {/* Dashboard/Blog Style Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Card */}
+          {/* Rules list */}
           <div className="lg:col-span-2 space-y-6">
-            {sections.map((section, idx) => (
+            {rules.map((rule, idx) => (
               <div 
                 key={idx} 
                 className="bg-card border border-border/80 rounded-3xl shadow-xl p-6 md:p-8 hover:border-primary/30 transition-all duration-300"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-xl bg-primary/10">
-                    {section.icon}
+                    {rule.icon}
                   </div>
                   <h2 className="text-xl font-bold tracking-tight text-foreground">
-                    {section.title}
+                    {rule.title}
                   </h2>
                 </div>
                 <p className="text-muted-foreground leading-relaxed text-sm md:text-base whitespace-pre-line">
-                  {section.content}
+                  {rule.content}
                 </p>
               </div>
             ))}
           </div>
 
-          {/* Sidebar Info Card */}
+          {/* Quick Links Sidebar */}
           <div className="space-y-6">
             <div className="bg-card border border-border/85 rounded-3xl p-6 shadow-xl sticky top-24">
-              <h3 className="text-lg font-bold text-foreground mb-4">Quick Navigation</h3>
+              <h3 className="text-lg font-bold text-foreground mb-4">Quick Links</h3>
               <ul className="space-y-3 text-sm">
+                <li>
+                  <Link href="/terms" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    Terms & Conditions
+                  </Link>
+                </li>
                 <li>
                   <Link href="/privacy" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                     Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/refund-policy" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                    Refund Policy
                   </Link>
                 </li>
                 <li>
@@ -141,16 +135,16 @@ export default function TermsPage() {
               </ul>
 
               <div className="mt-8 pt-6 border-t border-border/40">
-                <h4 className="text-sm font-bold text-foreground mb-2">Need Assistance?</h4>
+                <h4 className="text-sm font-bold text-foreground mb-2">Refund Issue?</h4>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Have questions about these terms? Get in touch with our operations team.
+                  Did you cancel a booking but haven't received your credit note or transaction update? Get in touch.
                 </p>
-                <Link 
-                  href="/contact" 
+                <a 
+                  href="mailto:servegoofficial@gmail.com" 
                   className="inline-flex w-full items-center justify-center py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:scale-95 transition-all text-center shadow-md shadow-primary/10"
                 >
-                  Contact Support
-                </Link>
+                  Write to Support
+                </a>
               </div>
             </div>
           </div>

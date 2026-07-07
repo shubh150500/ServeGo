@@ -1152,10 +1152,11 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#services" className="hover:text-foreground transition-colors">Services</a>
             <a href="#become-worker" className="hover:text-foreground transition-colors">Become a Partner</a>
-            <a href="#faq" className="hover:text-foreground transition-colors">FAQs</a>
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms & Conditions</Link>
-            <Link href="/refund" className="hover:text-foreground transition-colors">Refund & Cancellation</Link>
+            <Link href="/refund-policy" className="hover:text-foreground transition-colors">Refund Policy</Link>
+            <Link href="/worker-agreement" className="hover:text-foreground transition-colors">Worker Agreement</Link>
+            <Link href="/community-guidelines" className="hover:text-foreground transition-colors">Community Guidelines</Link>
             <Link href="/contact" className="hover:text-foreground transition-colors">Contact Us</Link>
             <Link href="/admin/login" className="text-primary hover:underline font-bold transition-colors">
               Admin Login

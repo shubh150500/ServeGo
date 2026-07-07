@@ -1,38 +1,38 @@
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
-import { ArrowLeft, Scale, AlertTriangle, ShieldCheck, UserCheck, HelpCircle } from "lucide-react";
+import { ArrowLeft, Users, ShieldAlert, Award, Ban, HardHat } from "lucide-react";
 
 export const metadata = {
-  title: "Terms & Conditions | ServeGo",
-  description: "ServeGo terms and conditions governing the use of our home‑services marketplace platform.",
+  title: "Worker Agreement | ServeGo",
+  description: "ServeGo agreement outlining the code of conduct, responsibilities, and guidelines for service professionals.",
 };
 
-export default function TermsPage() {
-  const sections = [
+export default function WorkerAgreementPage() {
+  const responsibilities = [
     {
-      icon: <Scale className="w-6 h-6 text-primary" />,
-      title: "1. Acceptance of Terms",
-      content: "By accessing or using the ServeGo platform, website, or mobile interface, you agree to be bound by these Terms & Conditions and all applicable laws. If you do not agree, you must immediately cease all use of our platform.",
+      icon: <ShieldAlert className="w-6 h-6 text-primary" />,
+      title: "1. Code of Conduct & Harassment Policy",
+      content: "ServeGo enforces a zero-tolerance policy against any form of harassment, discrimination, or abusive behavior. Workers must treat all customers and their properties with absolute respect. Physical, verbal, or sexual harassment will result in immediate, permanent termination of platform access and referral to local authorities.",
     },
     {
-      icon: <AlertTriangle className="w-6 h-6 text-primary" />,
-      title: "2. ServeGo Platform Disclaimer",
-      content: "ServeGo operates solely as a digital marketplace connecting customers with independent service professionals (workers). ServeGo is NOT an employer of these service professionals, does NOT act as an agency, and is NOT a contractor. We make no representations or warranties regarding the quality, safety, reliability, or legality of the services provided by third-party professionals. Any contract for service delivery is directly between the customer and the worker. ServeGo explicitly disclaims all liability for any damages, losses, disputes, or quality issues arising from services rendered.",
+      icon: <Ban className="w-6 h-6 text-primary" />,
+      title: "2. Alcohol, Intoxication & Illegal Substances",
+      content: "Workers must never report to a job under the influence of alcohol, drugs, or any intoxicating substances. Possession or consumption of alcohol/drugs on customer premises is strictly prohibited and constitutes grounds for an immediate, non-negotiable lifetime ban.",
     },
     {
-      icon: <UserCheck className="w-6 h-6 text-primary" />,
-      title: "3. Customer Responsibilities",
-      content: "As a customer of ServeGo, you agree to: (a) Provide complete, accurate, and truthful information during registration and booking; (b) Pay the non-refundable Service Assurance Fee via Razorpay to secure booking slots; (c) Direct all labor fee negotiations and payments honestly with the assigned professional post-job completion; (d) Maintain a safe, harassment-free, and respectful environment for the service provider at your premises; and (e) Report any fraud, security breaches, or damage claims immediately within 24 hours of job completion.",
+      icon: <Award className="w-6 h-6 text-primary" />,
+      title: "3. Fraud, Overcharging & Integrity",
+      content: "Workers must operate with complete transparency. This includes: (a) charging fair, negotiated labor fees; (b) never inflating material receipts or costs; (c) never requesting clients to cancel bookings to bypass platform tracking; and (d) providing genuine, verified skill details. Falsifying ratings or requesting friends/family to post fake reviews is strictly forbidden.",
     },
     {
-      icon: <ShieldCheck className="w-6 h-6 text-primary" />,
-      title: "4. Payments, Escrow & Fees",
-      content: "ServeGo requires a Service Assurance Fee to keep the platform running and cover safety verifications. The Service Assurance Fee is collected at booking confirmation via Razorpay. The final service labor charge is settled directly with the worker in cash or direct transfer. You must not attempt to bypass the platform fee structure or request workers to work off-platform to avoid fees, which may lead to account suspension.",
+      icon: <HardHat className="w-6 h-6 text-primary" />,
+      title: "4. Criminal Record & Legal Compliance",
+      content: "By listing services on ServeGo, workers warrant that they have no criminal records, active cases, or pending prosecutions under Indian law. Workers are solely responsible for ensuring compliance with all local craft licensing, building regulations, and safety rules.",
     },
     {
-      icon: <HelpCircle className="w-6 h-6 text-primary" />,
-      title: "5. Governing Law & Dispute Resolution",
-      content: "These terms are governed by and construed in accordance with the laws of India. Any disputes, actions, or legal proceedings arising out of or in connection with the platform or these terms shall be subject to the exclusive jurisdiction of the competent courts in Bihar, India.",
+      icon: <ShieldAlert className="w-6 h-6 text-primary" />,
+      title: "5. ServeGo's Right to Suspend & Ban",
+      content: "ServeGo reserves the absolute right to suspend, lock, or permanently ban any worker account at our sole discretion. Reasons for account suspension or banning include, but are not limited to: customer complaints, low average ratings (under 4.0 stars), unsafe work practices, direct fee circumvention, or any breach of this Worker Agreement. Suspended workers forfeit access to pending payouts or leads.",
     },
   ];
 
@@ -62,28 +62,27 @@ export default function TermsPage() {
         </div>
       </header>
 
-      {/* Hero section */}
+      {/* Main Content */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
         <div className="text-center mb-12">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary mb-4 border border-primary/20">
-            Legal Agreement
+            Partner Standards
           </span>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4">
-            Terms & Conditions
+            Worker Agreement
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">
-            Please read these terms carefully before accessing or using our services.
+            Professional terms and codes of conduct required from all listed service providers.
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             Last Updated: {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
 
-        {/* Dashboard/Blog Style Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Card */}
+          {/* Agreement Sections */}
           <div className="lg:col-span-2 space-y-6">
-            {sections.map((section, idx) => (
+            {responsibilities.map((section, idx) => (
               <div 
                 key={idx} 
                 className="bg-card border border-border/80 rounded-3xl shadow-xl p-6 md:p-8 hover:border-primary/30 transition-all duration-300"
@@ -103,11 +102,17 @@ export default function TermsPage() {
             ))}
           </div>
 
-          {/* Sidebar Info Card */}
+          {/* Quick Links Sidebar */}
           <div className="space-y-6">
             <div className="bg-card border border-border/85 rounded-3xl p-6 shadow-xl sticky top-24">
-              <h3 className="text-lg font-bold text-foreground mb-4">Quick Navigation</h3>
+              <h3 className="text-lg font-bold text-foreground mb-4">Related Documents</h3>
               <ul className="space-y-3 text-sm">
+                <li>
+                  <Link href="/terms" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    Terms & Conditions
+                  </Link>
+                </li>
                 <li>
                   <Link href="/privacy" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -118,12 +123,6 @@ export default function TermsPage() {
                   <Link href="/refund-policy" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                     Refund Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/worker-agreement" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                    Worker Agreement
                   </Link>
                 </li>
                 <li>
@@ -141,16 +140,16 @@ export default function TermsPage() {
               </ul>
 
               <div className="mt-8 pt-6 border-t border-border/40">
-                <h4 className="text-sm font-bold text-foreground mb-2">Need Assistance?</h4>
+                <h4 className="text-sm font-bold text-foreground mb-2">Worker Support</h4>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Have questions about these terms? Get in touch with our operations team.
+                  For disputes regarding account suspension or technical assistance, contact the ServeGo partner helpline.
                 </p>
-                <Link 
-                  href="/contact" 
+                <a 
+                  href="mailto:servegoofficial@gmail.com" 
                   className="inline-flex w-full items-center justify-center py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:scale-95 transition-all text-center shadow-md shadow-primary/10"
                 >
-                  Contact Support
-                </Link>
+                  Contact Partner Care
+                </a>
               </div>
             </div>
           </div>

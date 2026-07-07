@@ -118,6 +118,7 @@ export default function BookServicePage({ params }: PageProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [newBookingId, setNewBookingId] = useState("");
   const [copied, setCopied] = useState(false);
   const [rzpLoaded, setRzpLoaded] = useState(false);
@@ -370,6 +371,11 @@ export default function BookServicePage({ params }: PageProps) {
     e.preventDefault();
     setError("");
 
+    if (!termsAccepted) {
+      setError("Please read and agree to the Terms & Conditions and Privacy Policy before booking.");
+      return;
+    }
+
     if (!name.trim() || !mobile.trim() || !address.trim() || !area.trim() || !description.trim()) {
       setError("Please fill out all the fields before proceeding to payment.");
       return;
@@ -426,6 +432,9 @@ export default function BookServicePage({ params }: PageProps) {
         securityToken: secureToken,
         assuranceFeePaid: false,
         razorpayOrderId: orderId,
+        termsAccepted: true,
+        termsVersion: "v1.0",
+        termsAcceptedTimestamp: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -441,6 +450,15 @@ export default function BookServicePage({ params }: PageProps) {
       const bookingRef = doc(db, "bookings", generatedId);
       await setDoc(bookingRef, bookingDoc);
       const createdBookingId = generatedId;
+
+      // Add terms acceptance log
+      await addDoc(collection(db, "terms_acceptance_logs"), {
+        accepted: true,
+        timestamp: serverTimestamp(),
+        termsVersion: "v1.0",
+        customerMobile: mobile,
+        bookingId: createdBookingId
+      });
 
       // Save references in localStorage to recover from page reloads during UPI redirect
       localStorage.setItem("pending_booking_id", createdBookingId);
@@ -1165,6 +1183,27 @@ export default function BookServicePage({ params }: PageProps) {
                         </div>
                       </div>
 
+                      {/* Customer Terms & Conditions Checkbox */}
+                      <div className="flex items-start gap-2.5 bg-muted/30 p-4 border border-border/60 rounded-2xl">
+                        <input
+                          id="terms-checkbox"
+                          type="checkbox"
+                          checked={termsAccepted}
+                          onChange={(e) => setTermsAccepted(e.target.checked)}
+                          className="mt-1 w-4 h-4 text-primary border-border/80 rounded cursor-pointer"
+                        />
+                        <label htmlFor="terms-checkbox" className="text-xs text-muted-foreground leading-normal select-none">
+                          I have read and agree to the{" "}
+                          <Link href="/terms" target="_blank" className="text-primary font-bold hover:underline">
+                            Terms & Conditions
+                          </Link>{" "}
+                          and{" "}
+                          <Link href="/privacy" target="_blank" className="text-primary font-bold hover:underline">
+                            Privacy Policy
+                          </Link>.
+                        </label>
+                      </div>
+
                       <div className="flex justify-between gap-4">
                         <button
                           type="button"
@@ -1175,7 +1214,7 @@ export default function BookServicePage({ params }: PageProps) {
                         </button>
                         <button
                           type="submit"
-                          disabled={loading}
+                          disabled={loading || !termsAccepted}
                           className="flex-1 group inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 cursor-pointer"
                         >
                           <CreditCard className="w-5 h-5" />
