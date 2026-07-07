@@ -181,6 +181,13 @@ export default function OrderTrackingPage({ params }: PageProps) {
     return "pending";
   };
 
+  const formatWhatsAppNumber = (num: string): string => {
+    let clean = num.replace(/[^\d]/g, ""); // strip all non-digits
+    if (clean.startsWith("0")) clean = clean.substring(1);
+    if (clean.length === 10) clean = "91" + clean;
+    return clean;
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground py-12 px-6 selection:bg-primary/20">
       <div className="max-w-2xl mx-auto space-y-8">
@@ -348,7 +355,7 @@ export default function OrderTrackingPage({ params }: PageProps) {
                         <Phone className="w-4 h-4 text-primary" /> Call Partner
                       </a>
                       <a
-                        href={`https://wa.me/91${worker.mobile.replace(/\s+/g, "")}?text=Hi%20${encodeURIComponent(worker.name)},%20I%20am%20${encodeURIComponent(booking.customerName)}.%20We%20are%20connected%20via%20ServeGo%20for%20the%20${encodeURIComponent(serviceDetails?.name || "service")}%20request%20(ID:%20${booking.id.substring(0, 5)}).`}
+                        href={`https://wa.me/${formatWhatsAppNumber(worker.mobile)}?text=Hi%20${encodeURIComponent(worker.name)},%20I%20am%20${encodeURIComponent(booking.customerName)}.%20We%20are%20connected%20via%20ServeGo%20for%20the%20${encodeURIComponent(serviceDetails?.name || "service")}%20request%20(ID:%20${booking.id.substring(0, 5)}).`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer"
@@ -414,7 +421,7 @@ export default function OrderTrackingPage({ params }: PageProps) {
                         </a>
                         {partner.whatsapp && (
                           <a
-                            href={`https://wa.me/${partner.whatsapp.replace(/\s+/g, "")}`}
+                            href={`https://wa.me/${formatWhatsAppNumber(partner.whatsapp)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold rounded-xl text-xs transition-colors"
@@ -475,7 +482,7 @@ export default function OrderTrackingPage({ params }: PageProps) {
                         </a>
                         {partner.whatsapp && (
                           <a
-                            href={`https://wa.me/${partner.whatsapp.replace(/\s+/g, "")}`}
+                            href={`https://wa.me/${formatWhatsAppNumber(partner.whatsapp)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold rounded-xl text-xs transition-colors"
