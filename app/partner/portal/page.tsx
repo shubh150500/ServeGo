@@ -562,39 +562,37 @@ export default function PartnerPortalPage() {
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#1C1816] text-[#FAF6F1] flex flex-col font-sans">
+    return (
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-indigo-100">
       
       {/* Top Standalone PWA bar */}
-      <header className="px-5 py-4 border-b border-[#4D423C]/50 flex justify-between items-center bg-[#28211E]/90 sticky top-0 z-30 backdrop-blur-md">
+      <header className="px-5 py-4 border-b border-slate-200/80 flex justify-between items-center bg-white sticky top-0 z-30 shadow-sm shadow-slate-100/50">
         <div className="flex items-center gap-3">
           {/* Profile Photo */}
           {partnerDetails?.imageUrl ? (
             <img 
               src={partnerDetails.imageUrl} 
               alt={partner.name} 
-              className="w-10 h-10 rounded-full border border-[#4D423C] object-cover bg-[#1C1816]" 
+              className="w-10 h-10 rounded-full border border-slate-200 object-cover bg-slate-50" 
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-black">
+            <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-sm font-black">
               {partner.name.charAt(0).toUpperCase()}
             </div>
           )}
           <div>
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h1 className="text-sm font-black tracking-tight">{partner.name}</h1>
+              <h1 className="text-sm font-black tracking-tight text-slate-900">{partner.name}</h1>
             </div>
-            <p className="text-[10px] text-primary uppercase tracking-widest mt-0.5 font-bold">
+            <p className="text-[10px] text-indigo-600 uppercase tracking-widest mt-0.5 font-black">
               {getPartnerJobLabel(partner.serviceType)}
             </p>
           </div>
         </div>
         <button 
           onClick={handleLogout}
-          className="p-2 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer"
+          className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
           title="Sign Out"
         >
           <LogOut className="w-5 h-5" />
@@ -607,62 +605,62 @@ export default function PartnerPortalPage() {
         {/* Partner Metrics Row */}
         <div className="grid grid-cols-2 gap-4">
           {/* Metric 1: Completed Jobs */}
-          <div className="bg-[#28211E] border border-[#4D423C]/50 p-4.5 rounded-3xl flex flex-col justify-between shadow-md relative overflow-hidden backdrop-blur-md min-h-[110px] transition-all hover:border-[#4D423C]">
+          <div className="bg-white border border-slate-100 p-4.5 rounded-3xl flex flex-col justify-between shadow-md shadow-slate-100/50 min-h-[110px] transition-all hover:shadow-lg">
             <div className="flex justify-between items-center">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Completed Work</span>
-              <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 shrink-0">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Completed Work</span>
+              <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
                 <CheckCircle className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-2">
-              <p className="text-xl font-black text-emerald-400">{partnerDetails?.totalCompletedJobs || 0}</p>
-              <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">Jobs finished</span>
+              <p className="text-xl font-black text-emerald-600">{partnerDetails?.totalCompletedJobs || 0}</p>
+              <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Jobs finished</span>
             </div>
           </div>
 
           {/* Metric 2: Quality Rating */}
-          <div className="bg-[#28211E] border border-[#4D423C]/50 p-4.5 rounded-3xl flex flex-col justify-between shadow-md relative overflow-hidden backdrop-blur-md min-h-[110px] transition-all hover:border-[#4D423C]">
+          <div className="bg-white border border-slate-100 p-4.5 rounded-3xl flex flex-col justify-between shadow-md shadow-slate-100/50 min-h-[110px] transition-all hover:shadow-lg">
             <div className="flex justify-between items-center">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Quality Rating</span>
-              <div className="w-8 h-8 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400 shrink-0 animate-pulse">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Quality Rating</span>
+              <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shrink-0 animate-pulse">
+                <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
               </div>
             </div>
             <div className="mt-2">
-              <p className="text-xl font-black text-amber-400">{partnerDetails?.rating?.toFixed(1) || "5.0"} ★</p>
-              <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">{partnerDetails?.totalReviews || 0} reviews</span>
+              <p className="text-xl font-black text-amber-600">{partnerDetails?.rating?.toFixed(1) || "5.0"} ★</p>
+              <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{partnerDetails?.totalReviews || 0} reviews</span>
             </div>
           </div>
         </div>
 
         {/* Active Job State */}
         {activeLead ? (
-          <div className="bg-[#28211E] border border-[#4D423C]/80 p-6 rounded-3xl space-y-6 shadow-xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-[#4D423C] pb-4">
-              <span className="text-xs font-black bg-primary text-primary-foreground px-3 py-1 rounded-full uppercase tracking-wider">
+          <div className="bg-white border border-slate-100 p-6 rounded-3xl space-y-6 shadow-xl shadow-slate-100/80 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <span className="text-xs font-black bg-indigo-600 text-white px-3 py-1 rounded-full uppercase tracking-wider">
                 Active Booking
               </span>
-              <span className="text-xs text-muted-foreground font-mono flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" /> {activeLead.bookingDate || "Today"}
+              <span className="text-xs text-slate-400 font-mono flex items-center gap-1 font-bold">
+                <Clock className="w-3.5 h-3.5" /> ID: {activeLead.id}
               </span>
             </div>
 
             {/* Customer Details Display */}
             <div className="space-y-4">
               <div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Customer Name</span>
-                <p className="text-lg font-bold">{activeLead.customerName}</p>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">Customer Name</span>
+                <p className="text-lg font-bold text-slate-800">{activeLead.customerName}</p>
               </div>
 
               <div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Location / Address</span>
-                <p className="text-sm text-foreground/90 font-medium leading-relaxed">{activeLead.customerAddress}</p>
-                <span className="text-xs font-bold text-primary mt-1 block">Sector Area: {activeLead.customerArea}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">Location / Address</span>
+                <p className="text-sm text-slate-700 font-medium leading-relaxed">{activeLead.customerAddress}</p>
+                <span className="text-xs font-black text-indigo-600 mt-1 block">Sector Area: {activeLead.customerArea}</span>
               </div>
 
               <div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase block tracking-wider">Job Requirements</span>
-                <p className="text-sm bg-[#1C1816]/60 p-4 rounded-2xl border border-[#4D423C]/40 text-muted-foreground italic leading-relaxed">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">Job Requirements</span>
+                <p className="text-sm bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-600 italic leading-relaxed">
                   {activeLead.description}
                 </p>
               </div>
@@ -673,7 +671,7 @@ export default function PartnerPortalPage() {
               <div className="grid grid-cols-2 gap-3">
                 <a
                   href={`tel:${activeLead.customerMobile}`}
-                  className="py-4 bg-primary text-primary-foreground font-black text-sm rounded-2xl shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2.5 btn-press text-center cursor-pointer transition-all"
+                  className="py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-2xl shadow-lg hover:shadow-indigo-600/30 flex items-center justify-center gap-2.5 btn-press text-center cursor-pointer transition-all border-none"
                 >
                   <Phone className="w-4 h-4" /> Call Customer
                 </a>
@@ -684,7 +682,7 @@ export default function PartnerPortalPage() {
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-2xl flex items-center justify-center gap-2.5 btn-press text-center cursor-pointer transition-all"
+                  className="py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-2xl flex items-center justify-center gap-2.5 btn-press text-center cursor-pointer transition-all border-none"
                 >
                   <MessageSquare className="w-4 h-4" /> WhatsApp
                 </a>
@@ -696,16 +694,16 @@ export default function PartnerPortalPage() {
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-4 border border-[#4D423C] hover:bg-[#4D423C]/20 font-black text-sm rounded-2xl flex items-center justify-center gap-2.5 btn-press text-center cursor-pointer transition-all"
+                className="py-4 border border-slate-200 hover:bg-slate-55 text-slate-700 font-black text-sm rounded-2xl flex items-center justify-center gap-2.5 btn-press text-center cursor-pointer transition-all bg-white"
               >
-                <MapPin className="w-4 h-4 text-primary" /> Open Location Map
+                <MapPin className="w-4 h-4 text-indigo-600" /> Open Location Map
               </a>
             </div>
 
             {/* Complete action */}
             <button
               onClick={() => setShowCompleteModal(true)}
-              className="w-full py-4.5 bg-emerald-500 hover:bg-emerald-600 text-black font-black text-base rounded-2xl shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer mt-6 border-none"
+              className="w-full py-4.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base rounded-2xl shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer mt-6 border-none"
             >
               <CheckCircle className="w-5 h-5" /> Complete Job & Submit
             </button>
@@ -715,15 +713,15 @@ export default function PartnerPortalPage() {
           /* Waiting Screen State */
           <div className="flex-1 flex flex-col justify-center items-center py-16 text-center space-y-6">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary relative z-10">
+              <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 relative z-10">
                 <Activity className="w-12 h-12 animate-pulse" />
               </div>
-              <div className="absolute inset-0 rounded-full bg-primary/5 animate-ping duration-1000 scale-125" />
+              <div className="absolute inset-0 rounded-full bg-indigo-100/50 animate-ping duration-1000 scale-125" />
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-xl font-bold">Waiting for New Jobs...</h2>
-              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+              <h2 className="text-xl font-bold text-slate-800">Waiting for New Jobs...</h2>
+              <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
                 Stay on this screen to instantly receive and accept new {getPartnerJobLabel(partner.serviceType)} bookings. Keep volume up for audio alerts.
               </p>
             </div>
@@ -731,28 +729,28 @@ export default function PartnerPortalPage() {
             {/* Mini List of current available leads if any (without full details, just overview to accept) */}
             {availableLeads.length > 0 && (
               <div className="w-full max-w-md pt-4 space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground text-left">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 text-left">
                   Available Job Pickups ({availableLeads.length})
                 </h3>
                 {availableLeads.map((lead) => (
                   <div 
                     key={lead.id} 
-                    className="p-4 bg-[#28211E] border border-[#4D423C] rounded-2xl flex flex-col text-left gap-3.5"
+                    className="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col text-left gap-3.5 shadow-md shadow-slate-100/40"
                   >
                     <div>
                       <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
                           {getPartnerJobLabel(lead.serviceType)}
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-mono">{lead.bookingDate || "Today"}</span>
+                        <span className="text-[10px] text-slate-400 font-mono font-bold">{lead.bookingDate || "Today"}</span>
                       </div>
-                      <h4 className="font-bold text-sm mt-1">Sector Area: {lead.customerArea}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{lead.description}</p>
+                      <h4 className="font-bold text-sm mt-1 text-slate-800">Sector Area: {lead.customerArea}</h4>
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{lead.description}</p>
                     </div>
 
                     <button
                       onClick={() => handleAcceptJob(lead.id)}
-                      className="w-full py-3 bg-[#FAF6F1] hover:bg-white text-black font-black text-xs rounded-xl shadow-md btn-press cursor-pointer transition-all border-none"
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md btn-press cursor-pointer transition-all border-none"
                     >
                       Accept Booking
                     </button>
@@ -785,37 +783,80 @@ export default function PartnerPortalPage() {
             (warnings * 100)
           )));
 
-          // Badge System calculations
+          // Badge System calculations and styles
           let badge = "Bronze";
           let nextBadge = "Silver";
           let badgeThreshold = 300;
           let prevThreshold = 0;
+
+          let badgeStyles = {
+            bg: "bg-gradient-to-br from-amber-500 to-orange-700 text-white",
+            text: "text-amber-600",
+            label: "Bronze Quality Tier",
+            iconColor: "text-orange-200",
+            progressColor: "bg-orange-500"
+          };
 
           if (computedScore <= 300) {
             badge = "Bronze";
             nextBadge = "Silver";
             badgeThreshold = 300;
             prevThreshold = 0;
+            badgeStyles = {
+              bg: "bg-gradient-to-br from-amber-600 to-amber-800 text-white",
+              text: "text-amber-700",
+              label: "Bronze Quality Tier",
+              iconColor: "text-amber-300",
+              progressColor: "bg-amber-500"
+            };
           } else if (computedScore <= 600) {
             badge = "Silver";
             nextBadge = "Gold";
             badgeThreshold = 600;
             prevThreshold = 300;
+            badgeStyles = {
+              bg: "bg-gradient-to-br from-slate-400 via-slate-350 to-slate-600 text-white shadow-lg shadow-slate-100",
+              text: "text-slate-600",
+              label: "Silver Quality Tier",
+              iconColor: "text-slate-200",
+              progressColor: "bg-slate-400"
+            };
           } else if (computedScore <= 800) {
             badge = "Gold";
             nextBadge = "Elite";
             badgeThreshold = 800;
             prevThreshold = 600;
+            badgeStyles = {
+              bg: "bg-gradient-to-br from-yellow-400 via-amber-400 to-amber-600 text-slate-950 shadow-lg shadow-amber-100 border border-amber-300",
+              text: "text-amber-600",
+              label: "Luxurious Gold Tier",
+              iconColor: "text-amber-800",
+              progressColor: "bg-amber-600"
+            };
           } else if (computedScore <= 950) {
             badge = "Elite";
             nextBadge = "Legend";
             badgeThreshold = 950;
             prevThreshold = 800;
+            badgeStyles = {
+              bg: "bg-gradient-to-br from-blue-600 via-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-100 border border-indigo-400",
+              text: "text-indigo-600",
+              label: "Elite Platinum Tier",
+              iconColor: "text-indigo-200",
+              progressColor: "bg-indigo-500"
+            };
           } else {
             badge = "Legend";
             nextBadge = "Maxed";
             badgeThreshold = 1000;
             prevThreshold = 950;
+            badgeStyles = {
+              bg: "bg-gradient-to-br from-fuchsia-600 via-violet-600 to-indigo-700 text-white shadow-2xl shadow-fuchsia-100 border border-fuchsia-500",
+              text: "text-fuchsia-600",
+              label: "Legendary Cosmic Tier",
+              iconColor: "text-yellow-300 animate-bounce",
+              progressColor: "bg-fuchsia-500"
+            };
           }
 
           const pointsRemaining = Math.max(0, badgeThreshold - computedScore);
@@ -829,106 +870,111 @@ export default function PartnerPortalPage() {
           const isEligible = rank <= 5 && partnerDetails?.status === "active";
 
           return (
-            <div className="bg-[#28211E] border border-[#4D423C]/60 rounded-3xl p-5 space-y-5 shadow-xl relative overflow-hidden backdrop-blur-md mt-6">
-              <div className="flex items-center justify-between border-b border-[#4D423C]/50 pb-3">
-                <h3 className="text-sm font-black uppercase tracking-wider text-[#FAF6F1] flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" /> Performance Dashboard
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 space-y-5 shadow-xl shadow-slate-100/50 mt-2">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-indigo-600" /> Performance Dashboard
                 </h3>
-                <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  Private Account Summary
+                <span className="text-[10px] uppercase font-black tracking-widest bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full">
+                  Account Summary
                 </span>
               </div>
 
               {/* Reward Eligibility banner */}
               {isEligible ? (
-                <div className="bg-emerald-500/10 border border-emerald-500/25 p-3 rounded-2xl flex items-center gap-2.5">
-                  <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 animate-spin" style={{ animationDuration: "3s" }} />
-                  <p className="text-xs font-bold text-emerald-400 leading-tight">
+                <div className="bg-emerald-50 border border-emerald-100 p-3.5 rounded-2xl flex items-center gap-2.5">
+                  <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 animate-spin" style={{ animationDuration: "3s" }} />
+                  <p className="text-xs font-bold text-emerald-700 leading-tight">
                     Congratulations! You are eligible for this month's Top Performer Reward.
                   </p>
                 </div>
               ) : (
-                <div className="bg-[#1C1816] border border-[#4D423C]/40 p-3 rounded-2xl flex items-center gap-2.5">
-                  <TrendingUp className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <p className="text-xs font-bold text-muted-foreground leading-tight">
-                    Keep improving to reach Top 5.
+                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex items-center gap-2.5">
+                  <TrendingUp className="w-5 h-5 text-slate-400 shrink-0" />
+                  <p className="text-xs font-bold text-slate-500 leading-tight">
+                    Keep improving your stats to reach Top 5.
                   </p>
                 </div>
               )}
 
               {/* Two Column stats block */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3.5 bg-[#1C1816]/70 border border-[#4D423C]/30 rounded-2xl flex flex-col justify-between">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block tracking-wider">Overall Rank</span>
+                <div className="p-3.5 bg-slate-50 border border-slate-100/80 rounded-2xl flex flex-col justify-between">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">Overall Rank</span>
                   <div className="mt-2.5 flex items-baseline gap-1">
-                    <p className="text-2xl font-black text-primary">#{rank}</p>
-                    <span className="text-[8px] text-muted-foreground uppercase">Aurangabad</span>
+                    <p className="text-2xl font-black text-indigo-600">#{rank}</p>
+                    <span className="text-[8px] text-slate-400 uppercase font-black">Aurangabad</span>
                   </div>
                 </div>
 
-                <div className="p-3.5 bg-[#1C1816]/70 border border-[#4D423C]/30 rounded-2xl flex flex-col justify-between">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block tracking-wider">ServeScore</span>
+                <div className="p-3.5 bg-slate-50 border border-slate-100/80 rounded-2xl flex flex-col justify-between">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">ServeScore</span>
                   <div className="mt-2.5 flex items-baseline gap-1">
-                    <p className="text-2xl font-black text-emerald-400">{computedScore}</p>
-                    <span className="text-[8px] text-muted-foreground uppercase">Points</span>
+                    <p className="text-2xl font-black text-emerald-600">{computedScore}</p>
+                    <span className="text-[8px] text-slate-400 uppercase font-black">Points</span>
                   </div>
                 </div>
               </div>
 
-              {/* Progress to next badge */}
-              <div className="space-y-2 pt-1">
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="font-black text-[#FAF6F1] flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-primary" /> Current Tier: <span className="text-primary">{badge}</span>
-                  </span>
-                  {nextBadge !== "Maxed" ? (
-                    <span className="text-muted-foreground font-medium">
-                      Next: <span className="text-[#FAF6F1] font-bold">{nextBadge}</span>
-                    </span>
-                  ) : (
-                    <span className="text-emerald-400 font-bold uppercase tracking-widest text-[8px]">Max Badge Achieved</span>
+              {/* Progress to next badge (Premium card display) */}
+              <div className="space-y-3.5 pt-1">
+                
+                {/* Visual Badge Card */}
+                <div className={`p-5 rounded-2xl ${badgeStyles.bg} flex flex-col justify-between relative overflow-hidden shadow-md`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[8px] font-black uppercase tracking-widest opacity-80 block">Active Status Badge</span>
+                      <h4 className="text-xl font-black tracking-tight mt-1">{badgeStyles.label}</h4>
+                    </div>
+                    <Award className={`w-8 h-8 ${badgeStyles.iconColor} shrink-0`} />
+                  </div>
+                  
+                  {nextBadge !== "Maxed" && (
+                    <div className="mt-4.5 space-y-1.5">
+                      <div className="flex justify-between text-[10px] font-bold opacity-90">
+                        <span>Progress to {nextBadge}</span>
+                        <span>{Math.round(badgeProgress)}%</span>
+                      </div>
+                      <div className="w-full bg-black/20 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-white h-full rounded-full transition-all duration-500"
+                          style={{ width: `${badgeProgress}%` }}
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
-                
-                {nextBadge !== "Maxed" && (
-                  <div className="w-full bg-[#1C1816] h-2 rounded-full overflow-hidden border border-[#4D423C]/40">
-                    <div 
-                      className="bg-primary h-full transition-all duration-500 rounded-full" 
-                      style={{ width: `${badgeProgress}%` }}
-                    />
-                  </div>
-                )}
-                
+
                 {nextBadge !== "Maxed" ? (
-                  <p className="text-[9px] text-muted-foreground italic font-medium">
-                    Only {pointsRemaining} points remaining to unlock next badge.
+                  <p className="text-[10px] text-slate-500 italic font-semibold">
+                    Only <strong className="text-slate-800">{pointsRemaining}</strong> points remaining to unlock next badge.
                   </p>
                 ) : (
-                  <p className="text-[9px] text-emerald-400/80 italic font-medium flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" /> Legendary status unlocked! Keep up the outstanding service.
+                  <p className="text-[10px] text-emerald-600 italic font-semibold flex items-center gap-1 bg-emerald-50 p-2.5 rounded-xl">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> Legendary status unlocked! Keep up the outstanding service.
                   </p>
                 )}
               </div>
 
               {/* Achievement History */}
-              <div className="border-t border-[#4D423C]/50 pt-3.5 space-y-2">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider block">Achievement History</span>
-                <div className="grid grid-cols-2 gap-3 text-[10px]">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
+              <div className="border-t border-slate-100 pt-3.5 space-y-2.5">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Achievement History</span>
+                <div className="grid grid-cols-2 gap-3.5 text-[10px] font-semibold">
+                  <div className="flex items-center gap-1.5 text-slate-600">
                     <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Hall of Fame: <strong>{partnerDetails?.achievementHistory?.hallOfFameAppearances || 0}</strong></span>
+                    <span>Hall of Fame: <strong className="text-slate-900">{partnerDetails?.achievementHistory?.hallOfFameAppearances || 0}</strong></span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-slate-600">
                     <Medal className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Top 5 Finishes: <strong>{partnerDetails?.achievementHistory?.top5Finishes || 0}</strong></span>
+                    <span>Top 5 Finishes: <strong className="text-slate-900">{partnerDetails?.achievementHistory?.top5Finishes || 0}</strong></span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span>Best Score: <strong>{partnerDetails?.achievementHistory?.bestMonthlyPerformance || `${computedScore} Pts`}</strong></span>
+                  <div className="flex items-center gap-1.5 text-slate-600">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+                    <span>Best Score: <strong className="text-slate-900">{partnerDetails?.achievementHistory?.bestMonthlyPerformance || `${computedScore} Pts`}</strong></span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Highest Rank: <strong>#{partnerDetails?.achievementHistory?.highestRankAchieved || rank}</strong></span>
+                  <div className="flex items-center gap-1.5 text-slate-600">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Highest Rank: <strong className="text-slate-900">#{partnerDetails?.achievementHistory?.highestRankAchieved || rank}</strong></span>
                   </div>
                 </div>
               </div>
@@ -940,22 +986,22 @@ export default function PartnerPortalPage() {
 
       {/* Floating Critical Alert Dialog for incoming jobs */}
       {newLeadAlert && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-6 z-50 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-[#28211E] border-2 border-primary p-6.5 rounded-3xl w-full max-w-md space-y-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center gap-3 border-b border-[#4D423C] pb-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary animate-bounce">
+        <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center p-6 z-50 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white border border-slate-100 p-6.5 rounded-3xl w-full max-w-md space-y-6 shadow-2xl animate-in zoom-in-95 text-slate-800">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 animate-bounce">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-black text-lg text-primary uppercase tracking-wide">Incoming Dispatch Alert</h3>
-                <p className="text-[10px] text-muted-foreground">Action required immediately</p>
+                <h3 className="font-black text-lg text-indigo-600 uppercase tracking-wide">Incoming Dispatch Alert</h3>
+                <p className="text-[10px] text-slate-400 font-bold">Action required immediately</p>
               </div>
             </div>
 
             <div className="space-y-3.5 text-sm">
-              <p><strong>Job Class:</strong> {getPartnerJobLabel(newLeadAlert.serviceType)}</p>
-              <p><strong>Work Area:</strong> {newLeadAlert.customerArea}</p>
-              <p className="text-xs text-muted-foreground italic bg-[#1C1816] p-3.5 rounded-xl border border-[#4D423C]/50">
+              <p className="text-slate-600"><strong>Job Class:</strong> <span className="text-slate-900 font-bold">{getPartnerJobLabel(newLeadAlert.serviceType)}</span></p>
+              <p className="text-slate-600"><strong>Work Area:</strong> <span className="text-slate-900 font-bold">{newLeadAlert.customerArea}</span></p>
+              <p className="text-xs text-slate-600 italic bg-slate-50 p-3.5 rounded-xl border border-slate-100">
                 "{newLeadAlert.description || 'No specific requirements details.'}"
               </p>
             </div>
@@ -963,13 +1009,13 @@ export default function PartnerPortalPage() {
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={handleRejectJob}
-                className="py-3 border border-[#4D423C] hover:bg-[#4D423C]/45 text-muted-foreground font-bold text-xs rounded-xl cursor-pointer btn-press"
+                className="py-3 border border-slate-200 hover:bg-slate-55 text-slate-500 font-bold text-xs rounded-xl cursor-pointer btn-press bg-white"
               >
                 Dismiss / Pass
               </button>
               <button
                 onClick={() => handleAcceptJob(newLeadAlert.id)}
-                className="py-3 bg-primary text-primary-foreground font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1 cursor-pointer btn-press border-none animate-pulse"
+                className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1 cursor-pointer btn-press border-none animate-pulse"
               >
                 Accept Lead Now
               </button>
@@ -980,22 +1026,22 @@ export default function PartnerPortalPage() {
 
       {/* Job Completion Modal Form */}
       {showCompleteModal && activeLead && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-6 z-50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-[#28211E] border border-[#4D423C] p-6 rounded-3xl w-full max-w-md space-y-6 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-[#4D423C] pb-4">
-              <h3 className="font-bold text-lg flex items-center gap-2">
+        <div className="fixed inset-0 bg-slate-900/85 flex items-center justify-center p-6 z-50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white border border-slate-100 p-6 rounded-3xl w-full max-w-md space-y-6 shadow-2xl text-slate-800">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <h3 className="font-bold text-lg flex items-center gap-2 text-slate-900">
                 <CheckCircle className="w-5 h-5 text-emerald-500" /> Complete Lead Work
               </h3>
               <button 
                 onClick={() => setShowCompleteModal(false)}
-                className="text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                className="text-xs font-semibold text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 Cancel
               </button>
             </div>
 
             {errorMsg && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3.5 rounded-xl text-xs flex items-center gap-2 font-medium">
+              <div className="bg-rose-50 border border-rose-100 text-rose-600 p-3.5 rounded-xl text-xs flex items-center gap-2 font-medium">
                 <AlertOctagon className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
@@ -1005,8 +1051,8 @@ export default function PartnerPortalPage() {
               
               {/* Photo upload field */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase block">Upload Completion Photo *</label>
-                <div className="relative border-2 border-dashed border-[#4D423C] rounded-2xl p-6.5 text-center bg-[#1C1816]/40 hover:bg-[#1C1816]/80 transition-colors flex flex-col items-center justify-center cursor-pointer">
+                <label className="text-xs font-bold text-slate-400 uppercase block">Upload Completion Photo *</label>
+                <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-6.5 text-center bg-slate-50 hover:bg-slate-100/50 transition-colors flex flex-col items-center justify-center cursor-pointer">
                   <input
                     type="file"
                     required
@@ -1019,14 +1065,14 @@ export default function PartnerPortalPage() {
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   {photoFile ? (
-                    <div className="space-y-2 text-emerald-400">
+                    <div className="space-y-2 text-emerald-600">
                       <ImageIcon className="w-8 h-8 mx-auto" />
                       <p className="text-xs font-bold line-clamp-1">{photoFile.name}</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 text-muted-foreground">
-                      <Upload className="w-8 h-8 mx-auto text-primary animate-bounce" />
-                      <p className="text-xs font-medium">Tap to snap or upload proof photo</p>
+                    <div className="space-y-2 text-slate-400">
+                      <Upload className="w-8 h-8 mx-auto text-indigo-600 animate-bounce" />
+                      <p className="text-xs font-semibold text-slate-600">Tap to snap or upload proof photo</p>
                       <p className="text-[10px]">JPEG, PNG (Required)</p>
                     </div>
                   )}
@@ -1035,23 +1081,23 @@ export default function PartnerPortalPage() {
 
               {/* Remarks/Feedback */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase block">Work Remarks (Optional)</label>
+                <label className="text-xs font-bold text-slate-400 uppercase block">Work Remarks (Optional)</label>
                 <textarea
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="e.g. Cleared leakage, resolved AC line issue successfully."
-                  className="w-full px-4 py-3 bg-[#1C1816]/50 border border-[#4D423C]/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/45 text-sm text-foreground/90 h-24 resize-none"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-800 h-24 resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={uploading}
-                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-black font-black text-sm rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer btn-press border-none"
+                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer btn-press border-none"
               >
                 {uploading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <span>{uploadStep || "Uploading..."}</span>
                   </>
                 ) : (
@@ -1066,15 +1112,15 @@ export default function PartnerPortalPage() {
 
       {/* PWA Install Promotion Modal Overlay */}
       {showInstallPrompt && !isStandalone && (
-        <div className="fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-55 backdrop-blur-md animate-in fade-in">
-          <div className="bg-[#28211E] border border-[#4D423C] p-8 rounded-3xl w-full max-w-md text-center space-y-6 shadow-2xl">
-            <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mx-auto">
+        <div className="fixed inset-0 bg-slate-900/90 flex items-center justify-center p-6 z-55 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white border border-slate-100 p-8 rounded-3xl w-full max-w-md text-center space-y-6 shadow-2xl text-slate-800">
+            <div className="w-20 h-20 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-600 mx-auto">
               <Upload className="w-10 h-10 animate-bounce" />
             </div>
             
             <div className="space-y-2">
-              <h3 className="font-black text-2xl text-[#FAF6F1]">Install Partner App</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed px-2">
+              <h3 className="font-black text-2xl text-slate-900">Install Partner App</h3>
+              <p className="text-xs text-slate-500 leading-relaxed px-2">
                 This portal requires installation to run on your home screen. Installing enables standalone view, fast startup, custom vibration codes, and audio ring alerts.
               </p>
             </div>
@@ -1094,14 +1140,14 @@ export default function PartnerPortalPage() {
                     alert("Click the three dots in your mobile browser and select 'Add to Home screen' or 'Install App' to install.");
                   }
                 }}
-                className="w-full py-4 bg-primary text-primary-foreground font-black text-sm rounded-2xl shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2 cursor-pointer btn-press border-none"
+                className="w-full py-4 bg-indigo-600 text-white font-black text-sm rounded-2xl shadow-lg hover:shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer btn-press border-none"
               >
                 Install App Now
               </button>
               
               <button
                 onClick={() => setShowInstallPrompt(false)}
-                className="w-full py-3 border border-[#4D423C] hover:bg-[#4D423C]/20 text-xs font-bold rounded-2xl text-muted-foreground cursor-pointer transition-colors"
+                className="w-full py-3 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-2xl text-slate-400 cursor-pointer transition-colors bg-white"
               >
                 Continue in Browser
               </button>
@@ -1111,11 +1157,12 @@ export default function PartnerPortalPage() {
       )}
 
       {/* Footer Branding */}
-      <footer className="mt-auto p-6 bg-black/40 border-t border-[#4D423C]/30 text-[10px] text-muted-foreground font-bold tracking-widest w-full text-center uppercase">
+      <footer className="mt-auto p-6 bg-slate-100/80 border-t border-slate-200 text-[10px] text-slate-400 font-bold tracking-widest w-full text-center uppercase">
         <p>© 2026 ServeGo. All Rights Reserved. Partner Portal.</p>
-        {debugInfo.error && <p className="text-rose-400 font-bold font-mono mt-1">Error: {debugInfo.error}</p>}
+        {debugInfo.error && <p className="text-rose-600 font-bold font-mono mt-1">Error: {debugInfo.error}</p>}
       </footer>
 
     </div>
+  );>
   );
 }

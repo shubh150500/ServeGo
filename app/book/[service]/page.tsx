@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SERVICES_LIST } from "@/lib/services";
 import ServiceIcon from "@/components/ServiceIcon";
 import ThemeToggle from "@/components/ThemeToggle";
-import { collection, addDoc, serverTimestamp, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, onSnapshot, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ArrowLeft, CreditCard, ShieldCheck, AlertCircle, CheckCircle, Copy, Check } from "lucide-react";
 
@@ -436,8 +436,11 @@ export default function BookServicePage({ params }: PageProps) {
         bookingDoc.assignedPartnerType = service.type || "";
       }
 
-      const bookingRef = await addDoc(collection(db, "bookings"), bookingDoc);
-      const createdBookingId = bookingRef.id;
+      // Generate professional booking ID starting with "SG" followed by 8 uppercase alphanumeric chars
+      const generatedId = "SG" + Array.from({ length: 8 }, () => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(Math.random() * 36)]).join("");
+      const bookingRef = doc(db, "bookings", generatedId);
+      await setDoc(bookingRef, bookingDoc);
+      const createdBookingId = generatedId;
 
       // Save references in localStorage to recover from page reloads during UPI redirect
       localStorage.setItem("pending_booking_id", createdBookingId);
