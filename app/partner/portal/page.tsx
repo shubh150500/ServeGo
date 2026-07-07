@@ -307,10 +307,40 @@ export default function PartnerPortalPage() {
     const profile = localStorage.getItem("partner_profile");
     if (!profile) {
       router.push("/partner/login");
+      setLoading(false);
+      return;
     } else {
       setPartner(JSON.parse(profile));
     }
     setLoading(false);
+
+    // Setup inactivity timer
+    let lastActivity = Date.now();
+
+    const handleUserActivity = () => {
+      lastActivity = Date.now();
+    };
+
+    window.addEventListener("mousemove", handleUserActivity);
+    window.addEventListener("keydown", handleUserActivity);
+    window.addEventListener("click", handleUserActivity);
+    window.addEventListener("scroll", handleUserActivity);
+
+    const inactivityInterval = setInterval(() => {
+      if (Date.now() - lastActivity > 15 * 60 * 1000) { // 15 minutes session timeout
+        console.log("Partner session expired due to inactivity.");
+        localStorage.removeItem("partner_profile");
+        router.push("/partner/login");
+      }
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("mousemove", handleUserActivity);
+      window.removeEventListener("keydown", handleUserActivity);
+      window.removeEventListener("click", handleUserActivity);
+      window.removeEventListener("scroll", handleUserActivity);
+      clearInterval(inactivityInterval);
+    };
   }, []);
 
   // Setup Push Notification Subscription

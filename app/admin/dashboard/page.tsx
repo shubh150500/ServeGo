@@ -264,9 +264,13 @@ export default function AdminDashboardPage() {
   const handleMilestoneAction = async (action: "approve" | "reject" | "pay" | "update_meta", workerId: string) => {
     setUpdatingMilestone(true);
     try {
+      const idToken = await auth.currentUser?.getIdToken();
       const response = await fetch("/api/admin/milestone", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken || ""}`
+        },
         body: JSON.stringify({
           action,
           workerId,
@@ -315,9 +319,29 @@ export default function AdminDashboardPage() {
   const [announcing, setAnnouncing] = useState(false);
   const [announceSuccess, setAnnounceSuccess] = useState("");
 
-  // Auth Guard & Real-Time Collections Sync
+  // Auth Guard & Real-Time Collections Sync & Inactivity Timer
   useEffect(() => {
     let unsubscribes: (() => void)[] = [];
+    let lastActivity = Date.now();
+
+    const handleUserActivity = () => {
+      lastActivity = Date.now();
+    };
+
+    // Inactivity listeners
+    window.addEventListener("mousemove", handleUserActivity);
+    window.addEventListener("keydown", handleUserActivity);
+    window.addEventListener("click", handleUserActivity);
+    window.addEventListener("scroll", handleUserActivity);
+
+    const inactivityInterval = setInterval(() => {
+      if (Date.now() - lastActivity > 15 * 60 * 1000) { // 15 minutes session timeout
+        console.log("Admin session expired due to inactivity.");
+        signOut(auth).then(() => {
+          router.push("/admin/login");
+        });
+      }
+    }, 10000);
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
@@ -502,6 +526,11 @@ export default function AdminDashboardPage() {
     });
 
     return () => {
+      window.removeEventListener("mousemove", handleUserActivity);
+      window.removeEventListener("keydown", handleUserActivity);
+      window.removeEventListener("click", handleUserActivity);
+      window.removeEventListener("scroll", handleUserActivity);
+      clearInterval(inactivityInterval);
       unsubscribeAuth();
       unsubscribes.forEach(unsub => unsub());
     };

@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase";
 import { Lock, Phone, ShieldAlert, UserPlus, User, Briefcase, MapPin, CalendarDays, Camera } from "lucide-react";
 import { SERVICES_LIST } from "@/lib/services";
 import { compressProfilePhoto } from "@/lib/imageCompressor";
+import { hashPassword } from "@/lib/utils";
 
 export default function PartnerRegisterPage() {
   const router = useRouter();
@@ -77,6 +78,22 @@ export default function PartnerRegisterPage() {
     if (!file) return;
 
     setImageError("");
+    
+    // File size check: 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("Image file size must be less than 5MB.");
+      setImageUrl("");
+      return;
+    }
+
+    // Allowed mime types
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setImageError("Only JPG, PNG, and WEBP image files are allowed.");
+      setImageUrl("");
+      return;
+    }
+
     setUploadingImage(true);
     try {
       const compressed = await compressProfilePhoto(file);
@@ -95,6 +112,22 @@ export default function PartnerRegisterPage() {
     if (!file) return;
 
     setAadhaarError("");
+
+    // File size check: 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      setAadhaarError("Aadhaar image file size must be less than 5MB.");
+      setAadhaarUrl("");
+      return;
+    }
+
+    // Allowed mime types
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setAadhaarError("Only JPG, PNG, and WEBP image files are allowed.");
+      setAadhaarUrl("");
+      return;
+    }
+
     setUploadingAadhaar(true);
     try {
       const compressed = await compressProfilePhoto(file);
@@ -155,6 +188,8 @@ export default function PartnerRegisterPage() {
     }
 
     try {
+      const hashedPassword = await hashPassword(cleanPassword);
+
       // Check if mobile already exists
       const existingQuery = query(
         collection(db, "workers"),
@@ -190,7 +225,7 @@ export default function PartnerRegisterPage() {
         area: cleanArea,
         experience: parseInt(experience, 10) || 1,
         email: "",
-        password: cleanPassword,
+        password: hashedPassword,
         imageUrl: imageUrl,
         aadhaarUrl: aadhaarUrl,
         rating: 5.0,

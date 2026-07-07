@@ -25,16 +25,37 @@ export default function AdminLoginPage() {
       return;
     }
 
+    const lockoutKey = "admin_lockout_until";
+    const failedAttemptsKey = "admin_failed_attempts";
+
+    const lockoutTime = localStorage.getItem(lockoutKey);
+    if (lockoutTime && Date.now() < parseInt(lockoutTime, 10)) {
+      const remainingMin = Math.ceil((parseInt(lockoutTime, 10) - Date.now()) / 60000);
+      setError(`Too many failed login attempts. Account temporarily locked. Try again in ${remainingMin} minute(s).`);
+      setLoading(false);
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      localStorage.removeItem(failedAttemptsKey);
+      localStorage.removeItem(lockoutKey);
       router.push("/admin/dashboard");
     } catch (err: any) {
       console.error("Login failed:", err);
-      // Friendly messages for common errors
-      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
-        setError("Invalid admin email or password. Please try again.");
+      const attempts = parseInt(localStorage.getItem(failedAttemptsKey) || "0", 10) + 1;
+      localStorage.setItem(failedAttemptsKey, String(attempts));
+
+      if (attempts >= 5) {
+        localStorage.setItem(lockoutKey, String(Date.now() + 15 * 60 * 1000));
+        localStorage.removeItem(failedAttemptsKey);
+        setError("Admin account locked due to 5 consecutive failed login attempts. Please try again after 15 minutes.");
       } else {
-        setError("Authentication failed. Make sure your environment variables are configured.");
+        if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+          setError(`Invalid admin email or password. Failed attempts: ${attempts}/5.`);
+        } else {
+          setError("Authentication failed. Make sure your environment variables are configured.");
+        }
       }
     } finally {
       setLoading(false);

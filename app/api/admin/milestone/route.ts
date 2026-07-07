@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { initializeApp, getApps, cert, applicationDefault } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import webPush from "web-push";
 
 // Initialize Firebase Admin SDK
@@ -63,6 +64,25 @@ async function sendWorkerPush(workerId: string, title: string, bodyText: string)
 
 export async function POST(request: Request) {
   try {
+    // 1. Verify Authorization Header
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized: Missing Authorization token" }, { status: 401 });
+    }
+    const token = authHeader.split("Bearer ")[1];
+    let decodedToken;
+    try {
+      decodedToken = await getAuth().verifyIdToken(token);
+    } catch (authErr: any) {
+      return NextResponse.json({ error: "Unauthorized: Invalid token: " + authErr.message }, { status: 401 });
+    }
+
+    // 2. Validate email domain/specific admin emails
+    const email = decodedToken.email;
+    if (email !== "shubhamrajput7667@gmail.com" && email !== "ayush00ansh@gmail.com") {
+      return NextResponse.json({ error: "Forbidden: Access denied" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { action, workerId, bonusAmount, referenceNumber, manualExpenses, adminNotes } = body;
 

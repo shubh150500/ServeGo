@@ -17,17 +17,26 @@ service cloud.firestore {
 
     // 1. Workers Collection
     match /workers/{workerId} {
-      // Anyone can register a new worker profile or read worker info
-      allow create, read: if true;
-      // Admin can update or delete profiles. Public can update metrics during reviews.
-      allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'totalReviews', 'lastActivity', 'totalAssignedJobs', 'totalAcceptedJobs', 'totalRejectedJobs', 'totalCompletedJobs']));
+      allow create: if true;
+      allow get: if true; // Allow direct document fetch (e.g. for detail tracking)
+      allow list: if isAdmin(); // Block public listing of all workers
+      // Admin has full control. Unauthenticated worker portal updates must not touch credentials or status.
+      allow update: if isAdmin() || (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['password', 'mobile', 'name', 'experience', 'serviceType', 'status'])
+      );
       allow delete: if isAdmin();
     }
 
     // 2. Bookings (Leads) Collection
     match /bookings/{bookingId} {
-      // Anyone can read, create, or update bookings for MVP partner workflow
-      allow read, write: if true;
+      allow create: if true;
+      // Allow read only if document contains associated customer/worker info
+      allow read: if isAdmin() || resource.data.assignedWorkerId != null || resource.data.customerMobile != null;
+      // Admin has full update capability. Worker/Customer updates cannot modify billing or core service info.
+      allow update: if isAdmin() || (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['price', 'serviceType', 'customerMobile', 'paymentStatus'])
+      );
+      allow delete: if isAdmin();
     }
 
     // 3. Customers Collection
@@ -40,7 +49,8 @@ service cloud.firestore {
     match /reviews/{reviewId} {
       // Anyone can post feedback; only admins can list reviews in dash
       allow create: if true;
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || resource.data.workerId != null;
+      allow write: if isAdmin();
     }
 
     // 5. Payments Collection
@@ -53,7 +63,11 @@ service cloud.firestore {
     // 6. Complaints Collection
     match /complaints/{complaintId} {
       allow create: if true;
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || resource.data.workerId != null || resource.data.customerMobile != null;
+      allow update: if isAdmin() || (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['customerName', 'customerMobile', 'workerId'])
+      );
+      allow delete: if isAdmin();
     }
 
     // 7. Admin Logs

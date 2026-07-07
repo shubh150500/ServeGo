@@ -6,6 +6,7 @@ import Link from "next/link";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Lock, Phone, ShieldAlert, KeyRound, UserPlus } from "lucide-react";
+import { hashPassword } from "@/lib/utils";
 
 export default function PartnerLoginPage() {
   const router = useRouter();
@@ -58,20 +59,44 @@ export default function PartnerLoginPage() {
       return;
     }
 
+    const lockoutKey = `lockout_until_${cleanMobile}`;
+    const failedAttemptsKey = `failed_attempts_${cleanMobile}`;
+
+    const lockoutTime = localStorage.getItem(lockoutKey);
+    if (lockoutTime && Date.now() < parseInt(lockoutTime, 10)) {
+      const remainingMin = Math.ceil((parseInt(lockoutTime, 10) - Date.now()) / 60000);
+      setError(`Too many failed login attempts. Account temporarily locked. Try again in ${remainingMin} minute(s).`);
+      setLoading(false);
+      return;
+    }
+
     try {
+      const hashedPassword = await hashPassword(password);
       const q = query(
         collection(db, "workers"),
         where("mobile", "==", cleanMobile),
-        where("password", "==", password)
+        where("password", "==", hashedPassword)
       );
 
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        setError("Invalid mobile number or password. Please check your credentials.");
+        const attempts = parseInt(localStorage.getItem(failedAttemptsKey) || "0", 10) + 1;
+        localStorage.setItem(failedAttemptsKey, String(attempts));
+
+        if (attempts >= 5) {
+          localStorage.setItem(lockoutKey, String(Date.now() + 5 * 60 * 1000));
+          localStorage.removeItem(failedAttemptsKey);
+          setError("Account locked due to 5 consecutive failed login attempts. Please try again after 5 minutes.");
+        } else {
+          setError(`Invalid mobile number or password. Failed attempts: ${attempts}/5.`);
+        }
         setLoading(false);
         return;
       }
+
+      localStorage.removeItem(failedAttemptsKey);
+      localStorage.removeItem(lockoutKey);
 
       // Partner authenticated successfully
       const partnerDoc = querySnapshot.docs[0];
