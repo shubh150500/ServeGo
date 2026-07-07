@@ -558,11 +558,13 @@ export default function PartnerPortalPage() {
 
   if (loading || !partner) {
     return (
-      <div className="min-h-screen bg-[#1C1816] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
-    return (
+  }
+
+  return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-indigo-100">
       
       {/* Top Standalone PWA bar */}
