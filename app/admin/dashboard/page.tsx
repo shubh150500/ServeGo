@@ -2027,7 +2027,7 @@ export default function AdminDashboardPage() {
                     setAnnounceSuccess("🎉 Monthly Rewards successfully announced! Push notifications dispatched to top professionals & Hall of Fame archived.");
                   } catch (err: any) {
                     console.error("Announcement error:", err);
-                    alert("Failed to process announcement logs. Verify network connection.");
+                    alert("Failed to process announcement logs: " + (err.message || err));
                   } finally {
                     setAnnouncing(false);
                   }
