@@ -621,179 +621,6 @@ export default function PartnerPortalPage() {
           </div>
         </div>
 
-        {/* --- ServeGo Performance & Rewards System (Private View) --- */}
-        {(() => {
-          // ServeScore internal calculation hidden from workers
-          const rating = partnerDetails?.rating || 5.0;
-          const completedJobs = partnerDetails?.totalCompletedJobs || 0;
-          const accepted = partnerDetails?.totalAcceptedJobs || 0;
-          const rejected = partnerDetails?.totalRejectedJobs || 0;
-          const assigned = partnerDetails?.totalAssignedJobs || 0;
-          
-          const acceptanceRate = assigned > 0 ? (accepted / assigned) * 100 : 100;
-          const complaints = partnerDetails?.complaintCount || 0;
-          const warnings = partnerDetails?.warningCount || 0;
-
-          // Backend algorithmic logic executed client-side for private display representation
-          const computedScore = Math.min(1000, Math.max(0, Math.round(
-            (rating * 100) + 
-            (completedJobs * 10) + 
-            (acceptanceRate * 2) - 
-            (complaints * 50) - 
-            (warnings * 100)
-          )));
-
-          // Badge System calculations
-          let badge = "Bronze";
-          let nextBadge = "Silver";
-          let badgeThreshold = 300;
-          let prevThreshold = 0;
-
-          if (computedScore <= 300) {
-            badge = "Bronze";
-            nextBadge = "Silver";
-            badgeThreshold = 300;
-            prevThreshold = 0;
-          } else if (computedScore <= 600) {
-            badge = "Silver";
-            nextBadge = "Gold";
-            badgeThreshold = 600;
-            prevThreshold = 300;
-          } else if (computedScore <= 800) {
-            badge = "Gold";
-            nextBadge = "Elite";
-            badgeThreshold = 800;
-            prevThreshold = 600;
-          } else if (computedScore <= 950) {
-            badge = "Elite";
-            nextBadge = "Legend";
-            badgeThreshold = 950;
-            prevThreshold = 800;
-          } else {
-            badge = "Legend";
-            nextBadge = "Maxed";
-            badgeThreshold = 1000;
-            prevThreshold = 950;
-          }
-
-          const pointsRemaining = Math.max(0, badgeThreshold - computedScore);
-          const badgeProgress = Math.min(100, Math.max(0, ((computedScore - prevThreshold) / (badgeThreshold - prevThreshold)) * 100));
-
-          // Mock rank mapping for private view (without leaking actual numbers or leaderboard list)
-          const rank = partnerDetails?.rank || 3;
-          const performanceScore = Math.round(acceptanceRate * 0.4 + (rating / 5) * 60);
-
-          // Top 5 Eligibility Identification
-          const isEligible = rank <= 5 && partnerDetails?.status === "active";
-
-          return (
-            <div className="bg-[#28211E] border border-[#4D423C]/60 rounded-3xl p-5 space-y-5 shadow-xl relative overflow-hidden backdrop-blur-md">
-              <div className="flex items-center justify-between border-b border-[#4D423C]/50 pb-3">
-                <h3 className="text-sm font-black uppercase tracking-wider text-[#FAF6F1] flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" /> Performance Dashboard
-                </h3>
-                <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  Private Account Summary
-                </span>
-              </div>
-
-              {/* Reward Eligibility banner */}
-              {isEligible ? (
-                <div className="bg-emerald-500/10 border border-emerald-500/25 p-3 rounded-2xl flex items-center gap-2.5">
-                  <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 animate-spin" style={{ animationDuration: "3s" }} />
-                  <p className="text-xs font-bold text-emerald-400 leading-tight">
-                    Congratulations! You are eligible for this month's Top Performer Reward.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-[#1C1816] border border-[#4D423C]/40 p-3 rounded-2xl flex items-center gap-2.5">
-                  <TrendingUp className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <p className="text-xs font-bold text-muted-foreground leading-tight">
-                    Keep improving to reach Top 5.
-                  </p>
-                </div>
-              )}
-
-              {/* Two Column stats block */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3.5 bg-[#1C1816]/70 border border-[#4D423C]/30 rounded-2xl flex flex-col justify-between">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block tracking-wider">Overall Rank</span>
-                  <div className="mt-2.5 flex items-baseline gap-1">
-                    <p className="text-2xl font-black text-primary">#{rank}</p>
-                    <span className="text-[8px] text-muted-foreground uppercase">Aurangabad</span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 bg-[#1C1816]/70 border border-[#4D423C]/30 rounded-2xl flex flex-col justify-between">
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase block tracking-wider">ServeScore</span>
-                  <div className="mt-2.5 flex items-baseline gap-1">
-                    <p className="text-2xl font-black text-emerald-400">{computedScore}</p>
-                    <span className="text-[8px] text-muted-foreground uppercase">Points</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress to next badge */}
-              <div className="space-y-2 pt-1">
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="font-black text-[#FAF6F1] flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-primary" /> Current Tier: <span className="text-primary">{badge}</span>
-                  </span>
-                  {nextBadge !== "Maxed" ? (
-                    <span className="text-muted-foreground font-medium">
-                      Next: <span className="text-[#FAF6F1] font-bold">{nextBadge}</span>
-                    </span>
-                  ) : (
-                    <span className="text-emerald-400 font-bold uppercase tracking-widest text-[8px]">Max Badge Achieved</span>
-                  )}
-                </div>
-                
-                {nextBadge !== "Maxed" && (
-                  <div className="w-full bg-[#1C1816] h-2 rounded-full overflow-hidden border border-[#4D423C]/40">
-                    <div 
-                      className="bg-primary h-full transition-all duration-500 rounded-full" 
-                      style={{ width: `${badgeProgress}%` }}
-                    />
-                  </div>
-                )}
-                
-                {nextBadge !== "Maxed" ? (
-                  <p className="text-[9px] text-muted-foreground italic font-medium">
-                    Only {pointsRemaining} points remaining to unlock next badge.
-                  </p>
-                ) : (
-                  <p className="text-[9px] text-emerald-400/80 italic font-medium flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" /> Legendary status unlocked! Keep up the outstanding service.
-                  </p>
-                )}
-              </div>
-
-              {/* Achievement History */}
-              <div className="border-t border-[#4D423C]/50 pt-3.5 space-y-2">
-                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider block">Achievement History</span>
-                <div className="grid grid-cols-2 gap-3 text-[10px]">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Hall of Fame: <strong>{partnerDetails?.achievementHistory?.hallOfFameAppearances || 0}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Medal className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Top 5 Finishes: <strong>{partnerDetails?.achievementHistory?.top5Finishes || 0}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span>Best Score: <strong>{partnerDetails?.achievementHistory?.bestMonthlyPerformance || `${computedScore} Pts`}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Highest Rank: <strong>#{partnerDetails?.achievementHistory?.highestRankAchieved || rank}</strong></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
         {/* Active Job State */}
         {activeLead ? (
           <div className="bg-[#28211E] border border-[#4D423C]/80 p-6 rounded-3xl space-y-6 shadow-xl animate-in zoom-in-95 duration-200">
@@ -921,6 +748,179 @@ export default function PartnerPortalPage() {
             )}
           </div>
         )}
+
+        {/* --- ServeGo Performance & Rewards System (Private View) --- */}
+        {(() => {
+          // ServeScore internal calculation hidden from workers
+          const rating = partnerDetails?.rating || 5.0;
+          const completedJobs = partnerDetails?.totalCompletedJobs || 0;
+          const accepted = partnerDetails?.totalAcceptedJobs || 0;
+          const rejected = partnerDetails?.totalRejectedJobs || 0;
+          const assigned = partnerDetails?.totalAssignedJobs || 0;
+          
+          const acceptanceRate = assigned > 0 ? (accepted / assigned) * 100 : 100;
+          const complaints = partnerDetails?.complaintCount || 0;
+          const warnings = partnerDetails?.warningCount || 0;
+
+          // Backend algorithmic logic executed client-side for private display representation
+          const computedScore = Math.min(1000, Math.max(0, Math.round(
+            (rating * 100) + 
+            (completedJobs * 10) + 
+            (acceptanceRate * 2) - 
+            (complaints * 50) - 
+            (warnings * 100)
+          )));
+
+          // Badge System calculations
+          let badge = "Bronze";
+          let nextBadge = "Silver";
+          let badgeThreshold = 300;
+          let prevThreshold = 0;
+
+          if (computedScore <= 300) {
+            badge = "Bronze";
+            nextBadge = "Silver";
+            badgeThreshold = 300;
+            prevThreshold = 0;
+          } else if (computedScore <= 600) {
+            badge = "Silver";
+            nextBadge = "Gold";
+            badgeThreshold = 600;
+            prevThreshold = 300;
+          } else if (computedScore <= 800) {
+            badge = "Gold";
+            nextBadge = "Elite";
+            badgeThreshold = 800;
+            prevThreshold = 600;
+          } else if (computedScore <= 950) {
+            badge = "Elite";
+            nextBadge = "Legend";
+            badgeThreshold = 950;
+            prevThreshold = 800;
+          } else {
+            badge = "Legend";
+            nextBadge = "Maxed";
+            badgeThreshold = 1000;
+            prevThreshold = 950;
+          }
+
+          const pointsRemaining = Math.max(0, badgeThreshold - computedScore);
+          const badgeProgress = Math.min(100, Math.max(0, ((computedScore - prevThreshold) / (badgeThreshold - prevThreshold)) * 100));
+
+          // Mock rank mapping for private view (without leaking actual numbers or leaderboard list)
+          const rank = partnerDetails?.rank || 3;
+          const performanceScore = Math.round(acceptanceRate * 0.4 + (rating / 5) * 60);
+
+          // Top 5 Eligibility Identification
+          const isEligible = rank <= 5 && partnerDetails?.status === "active";
+
+          return (
+            <div className="bg-[#28211E] border border-[#4D423C]/60 rounded-3xl p-5 space-y-5 shadow-xl relative overflow-hidden backdrop-blur-md mt-6">
+              <div className="flex items-center justify-between border-b border-[#4D423C]/50 pb-3">
+                <h3 className="text-sm font-black uppercase tracking-wider text-[#FAF6F1] flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary" /> Performance Dashboard
+                </h3>
+                <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
+                  Private Account Summary
+                </span>
+              </div>
+
+              {/* Reward Eligibility banner */}
+              {isEligible ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/25 p-3 rounded-2xl flex items-center gap-2.5">
+                  <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 animate-spin" style={{ animationDuration: "3s" }} />
+                  <p className="text-xs font-bold text-emerald-400 leading-tight">
+                    Congratulations! You are eligible for this month's Top Performer Reward.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-[#1C1816] border border-[#4D423C]/40 p-3 rounded-2xl flex items-center gap-2.5">
+                  <TrendingUp className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <p className="text-xs font-bold text-muted-foreground leading-tight">
+                    Keep improving to reach Top 5.
+                  </p>
+                </div>
+              )}
+
+              {/* Two Column stats block */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3.5 bg-[#1C1816]/70 border border-[#4D423C]/30 rounded-2xl flex flex-col justify-between">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block tracking-wider">Overall Rank</span>
+                  <div className="mt-2.5 flex items-baseline gap-1">
+                    <p className="text-2xl font-black text-primary">#{rank}</p>
+                    <span className="text-[8px] text-muted-foreground uppercase">Aurangabad</span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-[#1C1816]/70 border border-[#4D423C]/30 rounded-2xl flex flex-col justify-between">
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase block tracking-wider">ServeScore</span>
+                  <div className="mt-2.5 flex items-baseline gap-1">
+                    <p className="text-2xl font-black text-emerald-400">{computedScore}</p>
+                    <span className="text-[8px] text-muted-foreground uppercase">Points</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress to next badge */}
+              <div className="space-y-2 pt-1">
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="font-black text-[#FAF6F1] flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-primary" /> Current Tier: <span className="text-primary">{badge}</span>
+                  </span>
+                  {nextBadge !== "Maxed" ? (
+                    <span className="text-muted-foreground font-medium">
+                      Next: <span className="text-[#FAF6F1] font-bold">{nextBadge}</span>
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400 font-bold uppercase tracking-widest text-[8px]">Max Badge Achieved</span>
+                  )}
+                </div>
+                
+                {nextBadge !== "Maxed" && (
+                  <div className="w-full bg-[#1C1816] h-2 rounded-full overflow-hidden border border-[#4D423C]/40">
+                    <div 
+                      className="bg-primary h-full transition-all duration-500 rounded-full" 
+                      style={{ width: `${badgeProgress}%` }}
+                    />
+                  </div>
+                )}
+                
+                {nextBadge !== "Maxed" ? (
+                  <p className="text-[9px] text-muted-foreground italic font-medium">
+                    Only {pointsRemaining} points remaining to unlock next badge.
+                  </p>
+                ) : (
+                  <p className="text-[9px] text-emerald-400/80 italic font-medium flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> Legendary status unlocked! Keep up the outstanding service.
+                  </p>
+                )}
+              </div>
+
+              {/* Achievement History */}
+              <div className="border-t border-[#4D423C]/50 pt-3.5 space-y-2">
+                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-wider block">Achievement History</span>
+                <div className="grid grid-cols-2 gap-3 text-[10px]">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Hall of Fame: <strong>{partnerDetails?.achievementHistory?.hallOfFameAppearances || 0}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Medal className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Top 5 Finishes: <strong>{partnerDetails?.achievementHistory?.top5Finishes || 0}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+                    <span>Best Score: <strong>{partnerDetails?.achievementHistory?.bestMonthlyPerformance || `${computedScore} Pts`}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Highest Rank: <strong>#{partnerDetails?.achievementHistory?.highestRankAchieved || rank}</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       </main>
 

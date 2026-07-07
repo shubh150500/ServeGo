@@ -228,6 +228,22 @@ export default function AdminDashboardPage() {
   const [workerServiceFilter, setWorkerServiceFilter] = useState("ALL");
   const [workerAreaFilter, setWorkerAreaFilter] = useState("");
 
+  // Top level state definitions for simulation and rewards tab to prevent React Hook violations
+  const [perfSearch, setPerfSearch] = useState("");
+  const [perfCategory, setPerfCategory] = useState("ALL");
+  const [perfStatus, setPerfStatus] = useState("ALL");
+  const [selectedSimWorker, setSelectedSimWorker] = useState<any>(null);
+  const [simRatingOffset, setSimRatingOffset] = useState(0.0);
+  const [simCompletedOffset, setSimCompletedOffset] = useState(0);
+  const [simRejectedOffset, setSimRejectedOffset] = useState(0);
+  const [simComplaintsOffset, setSimComplaintsOffset] = useState(0);
+  const [simAcceptanceRateOffset, setSimAcceptanceRateOffset] = useState(0);
+  const [hofSearch, setHofSearch] = useState("");
+  const [hofMonth, setHofMonth] = useState("");
+  const [hofYear, setHofYear] = useState("2026");
+  const [announcing, setAnnouncing] = useState(false);
+  const [announceSuccess, setAnnounceSuccess] = useState("");
+
   // Auth Guard & Real-Time Collections Sync
   useEffect(() => {
     let unsubscribes: (() => void)[] = [];
@@ -1891,30 +1907,6 @@ export default function AdminDashboardPage() {
 
               {/* Tab: Performance & Rewards Dashboard (Admin Control) */}
               {activeTab === "performance-dashboard" && (() => {
-                // Internal states for simulation playground and filters
-                const [perfSearch, setPerfSearch] = useState("");
-                const [perfCategory, setPerfCategory] = useState("ALL");
-                const [perfStatus, setPerfStatus] = useState("ALL");
-                
-                // Simulation panel worker select
-                const [selectedSimWorker, setSelectedSimWorker] = useState<any>(null);
-                
-                // Simulation offset sliders
-                const [simRatingOffset, setSimRatingOffset] = useState(0.0); // e.g. -1.0 to +1.0
-                const [simCompletedOffset, setSimCompletedOffset] = useState(0);
-                const [simRejectedOffset, setSimRejectedOffset] = useState(0);
-                const [simComplaintsOffset, setSimComplaintsOffset] = useState(0);
-                const [simAcceptanceRateOffset, setSimAcceptanceRateOffset] = useState(0);
-
-                // Hall of Fame view states
-                const [hofSearch, setHofSearch] = useState("");
-                const [hofMonth, setHofMonth] = useState("");
-                const [hofYear, setHofYear] = useState("2026");
-
-                // Notification announcements list status state
-                const [announcing, setAnnouncing] = useState(false);
-                const [announceSuccess, setAnnounceSuccess] = useState("");
-
                 // Dynamic calculations for all workers based on algorithm (hidden from worker panel)
                 const computedWorkersList = workers
                   .filter(w => w.status !== "removed")

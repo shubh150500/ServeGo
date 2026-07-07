@@ -935,83 +935,90 @@ export default function Home() {
       </section>
 
       {/* Top Professionals of Aurangabad Showcase Section */}
-      <section className="py-24 bg-card/40 border-t border-border/50 scroll-mt-6">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full flex items-center gap-1.5 justify-center w-fit mx-auto">
-              <UserCheck className="w-4 h-4" /> Top Performers
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-              Top Professionals of Aurangabad
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Meet our highest-performing and background-verified local service experts of the month.
-            </p>
-          </div>
+      {(() => {
+        const activeProfs = [
+          { role: "Top Electrician", key: "electrician", iconName: "electrical" },
+          { role: "Top Plumber", key: "plumber", iconName: "plumbing" },
+          { role: "Top Carpenter", key: "carpenter", iconName: "carpentry" },
+          { role: "Top AC Technician", key: "ac", iconName: "ac" }
+        ].filter(prof => !!topProfessionals[prof.key]);
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { role: "Top Electrician", key: "electrician", fallbackName: "Rajesh Electrician", iconName: "electrical" },
-              { role: "Top Plumber", key: "plumber", fallbackName: "Manoj Kumar", iconName: "plumbing" },
-              { role: "Top Carpenter", key: "carpenter", fallbackName: "Vijay Vishwakarma", iconName: "carpentry" },
-              { role: "Top AC Technician", key: "ac", fallbackName: "Rohan Verma", iconName: "ac" }
-            ].map((prof, idx) => {
-              const worker = topProfessionals[prof.key];
-              const name = worker?.name || prof.fallbackName;
-              const rating = worker?.rating?.toFixed(1) || "4.9";
-              const completedJobs = worker?.totalCompletedJobs || (15 + idx * 8);
-              // Default to generic placeholder profile photo
-              const photo = worker?.imageUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
+        if (activeProfs.length === 0) return null;
 
-              return (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.05, duration: 0.4 }}
-                  className="bg-card border border-border/70 p-6 rounded-3xl shadow-lg relative overflow-hidden backdrop-blur-md flex flex-col items-center text-center space-y-4 transition-all hover:border-primary/40 hover:shadow-xl"
-                >
-                  {/* Verified badge top-right */}
-                  <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-500 p-1.5 rounded-full" title="Verified Professional">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
+        return (
+          <section className="py-24 bg-card/40 border-t border-border/50 scroll-mt-6">
+            <div className="max-w-7xl mx-auto px-6">
+              <div className="text-center space-y-4 mb-16">
+                <span className="text-primary font-bold text-sm tracking-wider uppercase bg-primary/10 px-4 py-1.5 rounded-full flex items-center gap-1.5 justify-center w-fit mx-auto">
+                  <UserCheck className="w-4 h-4" /> Top Performers
+                </span>
+                <h2 className="text-4xl md:text-5xl font-black tracking-tight">
+                  Top Professionals of Aurangabad
+                </h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                  Meet our highest-performing and background-verified local service experts of the month.
+                </p>
+              </div>
 
-                  {/* Photo with glowing ring */}
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center">
-                      <img src={photo} alt={name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-1 rounded-full text-xs">
-                      <ServiceIcon name={prof.iconName} className="w-4 h-4" />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {activeProfs.map((prof, idx) => {
+                  const worker = topProfessionals[prof.key];
+                  const name = worker.name;
+                  const rating = worker.rating?.toFixed(1) || "5.0";
+                  const completedJobs = worker.totalCompletedJobs || 0;
+                  const photo = worker.imageUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
 
-                  {/* Details */}
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase text-primary tracking-widest block">
-                      {prof.role}
-                    </span>
-                    <h3 className="font-extrabold text-base text-foreground leading-snug">{name}</h3>
-                  </div>
+                  return (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 15 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.05, duration: 0.4 }}
+                      className="bg-card border border-border/70 p-6 rounded-3xl shadow-lg relative overflow-hidden backdrop-blur-md flex flex-col items-center text-center space-y-4 transition-all hover:border-primary/40 hover:shadow-xl"
+                    >
+                      {/* Verified badge top-right */}
+                      <div className="absolute top-4 right-4 bg-emerald-500/10 text-emerald-500 p-1.5 rounded-full" title="Verified Professional">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
 
-                  {/* Ratings & Jobs */}
-                  <div className="flex items-center gap-4 bg-muted/40 px-4 py-2 rounded-2xl w-full justify-center text-xs">
-                    <div className="flex items-center gap-1 font-bold text-foreground">
-                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                      <span>{rating}</span>
-                    </div>
-                    <div className="h-3 w-[1px] bg-border" />
-                    <div className="text-muted-foreground font-medium">
-                      <strong>{completedJobs}</strong> Jobs Completed
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+                      {/* Photo with glowing ring */}
+                      <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-2 border-primary/20 overflow-hidden bg-muted flex items-center justify-center">
+                          <img src={photo} alt={name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-1 rounded-full text-xs">
+                          <ServiceIcon name={prof.iconName} className="w-4 h-4" />
+                        </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black uppercase text-primary tracking-widest block">
+                          {prof.role}
+                        </span>
+                        <h3 className="font-extrabold text-base text-foreground leading-snug">{name}</h3>
+                      </div>
+
+                      {/* Ratings & Jobs */}
+                      <div className="flex items-center gap-4 bg-muted/40 px-4 py-2 rounded-2xl w-full justify-center text-xs">
+                        <div className="flex items-center gap-1 font-bold text-foreground">
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          <span>{rating}</span>
+                        </div>
+                        <div className="h-3 w-[1px] bg-border" />
+                        <div className="text-muted-foreground font-medium">
+                          <strong>{completedJobs}</strong> Jobs Completed
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Testimonials Carousel Section */}
       <section className="py-24 px-6 max-w-5xl mx-auto scroll-mt-6 border-t border-border/40" id="reviews">
