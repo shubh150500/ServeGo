@@ -1213,6 +1213,29 @@ export default function AdminDashboardPage() {
               {/* Tab 1: Overview */}
               {activeTab === "overview" && (
                 <div className="space-y-8">
+                  {/* Pending Approval Notifications banner */}
+                  {workers.filter(w => w.status === "pending").length > 0 && (
+                    <div className="bg-amber-500/10 border border-amber-500/25 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-pulse">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
+                          <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-amber-500 text-sm">Pending Partner Registrations</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            There are {workers.filter(w => w.status === "pending").length} new partners waiting for administrator verification before they can access their portal.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("workers")}
+                        className="px-4 py-2 bg-amber-500 text-black font-black text-xs rounded-xl shadow-md hover:scale-[1.02] transition-transform cursor-pointer border-none"
+                      >
+                        Go to Workers tab to Approve
+                      </button>
+                    </div>
+                  )}
+
                   {/* Top Stats Row */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {[

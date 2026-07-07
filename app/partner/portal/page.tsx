@@ -58,6 +58,11 @@ const getLiveServiceId = (staticId: string): string => {
   return mapping[staticId] || staticId;
 };
 
+const getPartnerJobLabel = (serviceType: string): string => {
+  const liveId = getLiveServiceId(serviceType);
+  return SERVICES_MAP[liveId] || SERVICES_MAP[serviceType] || serviceType;
+};
+
 const compressImageToBase64 = (file: File, maxWidth = 600, maxHeight = 600, quality = 0.5): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -561,8 +566,8 @@ export default function PartnerPortalPage() {
           <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-ping" />
           <div>
             <h1 className="text-sm font-black tracking-tight">{partner.name}</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
-              {SERVICES_MAP[partner.serviceType] || "Service Partner"}
+            <p className="text-[10px] text-primary uppercase tracking-widest mt-0.5 font-bold">
+              {getPartnerJobLabel(partner.serviceType)}
             </p>
           </div>
         </div>
@@ -578,14 +583,34 @@ export default function PartnerPortalPage() {
       {/* Main UI body */}
       <main className="flex-1 flex flex-col p-5 max-w-xl mx-auto w-full space-y-6">
         
-        {/* Completed Jobs Stats Card */}
-        <div className="bg-[#28211E] border border-[#4D423C]/50 p-5 rounded-3xl flex justify-between items-center shadow-md relative overflow-hidden backdrop-blur-md">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Total Completed Work</span>
-            <p className="text-2xl font-black text-emerald-400">{partnerDetails?.totalCompletedJobs || 0} Jobs Done</p>
+        {/* Partner Metrics Row */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Metric 1: Completed Jobs */}
+          <div className="bg-[#28211E] border border-[#4D423C]/50 p-4.5 rounded-3xl flex flex-col justify-between shadow-md relative overflow-hidden backdrop-blur-md min-h-[110px] transition-all hover:border-[#4D423C]">
+            <div className="flex justify-between items-center">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Completed Work</span>
+              <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 shrink-0">
+                <CheckCircle className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <p className="text-xl font-black text-emerald-400">{partnerDetails?.totalCompletedJobs || 0}</p>
+              <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">Jobs finished</span>
+            </div>
           </div>
-          <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400">
-            <CheckCircle className="w-6 h-6 animate-pulse" />
+
+          {/* Metric 2: Quality Rating */}
+          <div className="bg-[#28211E] border border-[#4D423C]/50 p-4.5 rounded-3xl flex flex-col justify-between shadow-md relative overflow-hidden backdrop-blur-md min-h-[110px] transition-all hover:border-[#4D423C]">
+            <div className="flex justify-between items-center">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Quality Rating</span>
+              <div className="w-8 h-8 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400 shrink-0 animate-pulse">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <p className="text-xl font-black text-amber-400">{partnerDetails?.rating?.toFixed(1) || "5.0"} ★</p>
+              <span className="text-[10px] text-muted-foreground font-medium block mt-0.5">{partnerDetails?.totalReviews || 0} reviews</span>
+            </div>
           </div>
         </div>
 
@@ -678,7 +703,7 @@ export default function PartnerPortalPage() {
             <div className="space-y-2">
               <h2 className="text-xl font-bold">Waiting for New Jobs...</h2>
               <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-                Stay on this screen to instantly receive and accept new {SERVICES_MAP[partner.serviceType] || "service"} bookings. Keep volume up for audio alerts.
+                Stay on this screen to instantly receive and accept new {getPartnerJobLabel(partner.serviceType)} bookings. Keep volume up for audio alerts.
               </p>
             </div>
 
@@ -696,7 +721,7 @@ export default function PartnerPortalPage() {
                     <div>
                       <div className="flex justify-between items-start">
                         <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-                          {SERVICES_MAP[lead.serviceType] || "Service Request"}
+                          {getPartnerJobLabel(lead.serviceType)}
                         </span>
                         <span className="text-[10px] text-muted-foreground font-mono">{lead.bookingDate || "Today"}</span>
                       </div>
@@ -734,7 +759,7 @@ export default function PartnerPortalPage() {
             </div>
 
             <div className="space-y-3.5 text-sm">
-              <p><strong>Job Class:</strong> {SERVICES_MAP[newLeadAlert.serviceType] || "General Repair"}</p>
+              <p><strong>Job Class:</strong> {getPartnerJobLabel(newLeadAlert.serviceType)}</p>
               <p><strong>Work Area:</strong> {newLeadAlert.customerArea}</p>
               <p className="text-xs text-muted-foreground italic bg-[#1C1816] p-3.5 rounded-xl border border-[#4D423C]/50">
                 "{newLeadAlert.description || 'No specific requirements details.'}"
