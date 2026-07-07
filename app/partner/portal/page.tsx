@@ -1163,6 +1163,5 @@ export default function PartnerPortalPage() {
       </footer>
 
     </div>
-  );>
   );
 }
