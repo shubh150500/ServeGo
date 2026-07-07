@@ -16,6 +16,7 @@ export interface WorkerMetrics {
   lastActivity: Timestamp | { seconds: number; nanoseconds: number } | null;
   status: "active" | "suspended" | "removed" | "pending";
   createdAt: Timestamp;
+  imageUrl?: string;
 }
 
 /**
