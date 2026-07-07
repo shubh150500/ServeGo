@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   Upload,
   AlertOctagon,
-  Clock
+  Clock,
+  Star
 } from "lucide-react";
 
 // List of supported services mapping
