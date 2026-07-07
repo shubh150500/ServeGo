@@ -124,6 +124,8 @@ export default function AdminDashboardPage() {
   const [serviceShortDescInput, setServiceShortDescInput] = useState("");
   const [serviceBenefitsInput, setServiceBenefitsInput] = useState("");
   const [serviceSubServicesInput, setServiceSubServicesInput] = useState("");
+  const [serviceMilestoneTargetInput, setServiceMilestoneTargetInput] = useState("100");
+  const [serviceMilestoneBonusInput, setServiceMilestoneBonusInput] = useState("5000");
   const [serviceFaqs, setServiceFaqs] = useState<{ question: string; answer: string }[]>([
     { question: "", answer: "" }
   ]);
@@ -1068,6 +1070,8 @@ export default function AdminDashboardPage() {
           .map((s) => s.trim())
           .filter(Boolean),
         faq: serviceFaqs.filter((f) => f.question.trim() && f.answer.trim()),
+        milestoneTarget: parseInt(serviceMilestoneTargetInput, 10) || 100,
+        milestoneBonus: parseFloat(serviceMilestoneBonusInput) || 5000,
       };
 
       console.log("Saving service configurations to Firestore:", sDoc);
@@ -1090,6 +1094,8 @@ export default function AdminDashboardPage() {
       setServiceShortDescInput("");
       setServiceBenefitsInput("");
       setServiceSubServicesInput("");
+      setServiceMilestoneTargetInput("100");
+      setServiceMilestoneBonusInput("5000");
       setServiceFaqs([{ question: "", answer: "" }]);
       
       alert("Service configurations updated successfully!");
@@ -1119,6 +1125,8 @@ export default function AdminDashboardPage() {
     setServiceShortDescInput(service.shortDescription || "");
     setServiceBenefitsInput((service.benefits || []).join("\n"));
     setServiceSubServicesInput((service.subServices || []).join("\n"));
+    setServiceMilestoneTargetInput(String(service.milestoneTarget ?? 100));
+    setServiceMilestoneBonusInput(String(service.milestoneBonus ?? 5000));
     setServiceFaqs(
       service.faq && service.faq.length > 0
         ? service.faq
@@ -2222,7 +2230,8 @@ export default function AdminDashboardPage() {
                               </thead>
                               <tbody className="divide-y divide-border/50">
                                 {filteredWorkers.map((row: any) => {
-                                  const milestoneTarget = row.currentMilestone || 100;
+                                  const matchingService = services.find(s => s.id === row.serviceType);
+                                  const milestoneTarget = row.currentMilestone || matchingService?.milestoneTarget || 100;
                                   const milestoneJobs = row.milestoneCompletedJobs || 0;
                                   const milestoneStatus = row.milestoneStatus || "in_progress";
                                   const rating = row.rating || 5.0;
@@ -2232,7 +2241,7 @@ export default function AdminDashboardPage() {
                                       key={row.id} 
                                       onClick={() => {
                                         setSelectedSimWorker(row);
-                                        setBonusAmountInput(row.milestoneBonusAmount ? String(row.milestoneBonusAmount) : "");
+                                        setBonusAmountInput(row.milestoneBonusAmount ? String(row.milestoneBonusAmount) : (matchingService?.milestoneBonus ? String(matchingService.milestoneBonus) : "5000"));
                                         setReferenceNumberInput(row.milestonePaymentDetails?.referenceNumber || "");
                                         setManualExpensesInput(row.manualExpenses ? String(row.manualExpenses) : "");
                                         setAdminNotesInput(row.adminNotes || "");
@@ -3050,6 +3059,32 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
 
+                        {/* Milestone settings per service category */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-bold text-foreground/80">Milestone Payout Job Target (Completed Jobs)</label>
+                            <input
+                              type="number"
+                              required
+                              placeholder="e.g. 100"
+                              value={serviceMilestoneTargetInput}
+                              onChange={(e) => setServiceMilestoneTargetInput(e.target.value)}
+                              className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-bold text-foreground/80">Milestone Payout Bonus (₹)</label>
+                            <input
+                              type="number"
+                              required
+                              placeholder="e.g. 5000"
+                              value={serviceMilestoneBonusInput}
+                              onChange={(e) => setServiceMilestoneBonusInput(e.target.value)}
+                              className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm"
+                            />
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div className="space-y-2">
                             <label className="text-sm font-bold text-foreground/80">Lucide Icon Name</label>
@@ -3277,6 +3312,7 @@ export default function AdminDashboardPage() {
                               <th className="px-6 py-4">Assurance Fee</th>
                               <th className="px-6 py-4">Sub-Services</th>
                               <th className="px-6 py-4">FAQs</th>
+                              <th className="px-6 py-4">Milestone Goal</th>
                               <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                           </thead>
@@ -3306,6 +3342,9 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td className="px-6 py-4 text-muted-foreground text-xs font-medium">
                                   {s.faq ? s.faq.length : 0} items
+                                </td>
+                                <td className="px-6 py-4 text-xs font-bold text-foreground">
+                                  {s.milestoneTarget ?? 100} Jobs / ₹{s.milestoneBonus ?? 5000}
                                 </td>
                                 <td className="px-6 py-4 text-right space-x-2">
                                   <button

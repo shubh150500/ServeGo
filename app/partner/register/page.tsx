@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Lock, Phone, ShieldAlert, UserPlus, User, Briefcase, MapPin, CalendarDays, Camera } from "lucide-react";
 import { SERVICES_LIST } from "@/lib/services";
@@ -168,6 +168,20 @@ export default function PartnerRegisterPage() {
         return;
       }
 
+      // Get custom milestone from service configuration
+      let serviceMilestoneTarget = 100;
+      let serviceMilestoneBonus = 5000;
+      try {
+        const serviceDocSnap = await getDoc(doc(db, "services", serviceType));
+        if (serviceDocSnap.exists()) {
+          const sData = serviceDocSnap.data();
+          serviceMilestoneTarget = sData.milestoneTarget ?? 100;
+          serviceMilestoneBonus = sData.milestoneBonus ?? 5000;
+        }
+      } catch (err) {
+        console.warn("Failed to fetch service milestone configs:", err);
+      }
+
       // Create new worker document
       const wDoc = {
         name: cleanName,
@@ -185,6 +199,8 @@ export default function PartnerRegisterPage() {
         totalAcceptedJobs: 0,
         totalRejectedJobs: 0,
         totalCompletedJobs: 0,
+        currentMilestone: serviceMilestoneTarget,
+        milestoneBonusAmount: serviceMilestoneBonus,
         agreementAccepted: true,
         agreementVersion: "v1.0",
         agreementAcceptedTimestamp: serverTimestamp(),
@@ -195,15 +211,19 @@ export default function PartnerRegisterPage() {
 
       const docRef = await addDoc(collection(db, "workers"), wDoc);
 
-      // Write worker agreement acceptance log
-      await addDoc(collection(db, "worker_agreement_acceptance_logs"), {
-        accepted: true,
-        timestamp: serverTimestamp(),
-        agreementVersion: "v1.0",
-        workerMobile: cleanMobile,
-        workerId: docRef.id,
-        workerName: cleanName
-      });
+      // Write worker agreement acceptance log (wrapped in separate try-catch to ensure registration success is not blocked)
+      try {
+        await addDoc(collection(db, "worker_agreement_acceptance_logs"), {
+          accepted: true,
+          timestamp: serverTimestamp(),
+          agreementVersion: "v1.0",
+          workerMobile: cleanMobile,
+          workerId: docRef.id,
+          workerName: cleanName
+        });
+      } catch (logErr) {
+        console.error("Failed to write worker agreement log:", logErr);
+      }
 
       localStorage.removeItem("partner_profile");
       setSuccess(true);
