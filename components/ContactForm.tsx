@@ -27,12 +27,14 @@ export default function ContactForm() {
     setLoading(true);
 
     try {
-      await addDoc(collection(db, "contacts"), {
-        name: name.trim(),
-        email: email.trim(),
-        mobile: mobile.trim(),
-        subject: subject.trim(),
-        message: message.trim(),
+      await addDoc(collection(db, "complaints"), {
+        customerName: name.trim(),
+        customerEmail: email.trim(),
+        customerMobile: mobile.trim(),
+        reason: subject.trim(),
+        description: message.trim(),
+        source: "support_enquiry",
+        status: "pending",
         createdAt: serverTimestamp(),
       });
       setSuccess(true);

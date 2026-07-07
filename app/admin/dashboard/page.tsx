@@ -95,6 +95,7 @@ export default function AdminDashboardPage() {
     | "settings"
     | "performance-dashboard"
     | "compliance"
+    | "enquiries"
   >("overview");
 
   // Data State
@@ -1304,6 +1305,7 @@ export default function AdminDashboardPage() {
             { id: "revenue", label: "Assurance Revenue", icon: DollarSign },
             { id: "logs", label: "Audit Logs", icon: History },
             { id: "compliance", label: "Legal & Compliance", icon: Scale },
+            { id: "enquiries", label: "Support Enquiries", icon: MessageSquare, badge: complaints.filter(c => c.source === "support_enquiry" && c.status === "pending").length },
             { id: "settings", label: "Website Settings", icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1976,6 +1978,28 @@ export default function AdminDashboardPage() {
                                       <div>
                                         <div className="font-semibold text-foreground">{worker.name}</div>
                                         <div className="text-xs text-muted-foreground font-mono">{worker.mobile}</div>
+                                        <div className="flex gap-2.5 mt-1 text-[10px]">
+                                          {(worker as any).imageUrl && (
+                                            <a 
+                                              href={(worker as any).imageUrl} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer" 
+                                              className="text-primary hover:underline font-bold flex items-center gap-0.5"
+                                            >
+                                              📷 Selfie Image
+                                            </a>
+                                          )}
+                                          {(worker as any).aadhaarUrl && (
+                                            <a 
+                                              href={(worker as any).aadhaarUrl} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer" 
+                                              className="text-emerald-600 hover:underline font-bold flex items-center gap-0.5"
+                                            >
+                                              📄 Aadhaar Card
+                                            </a>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   </td>
@@ -2528,6 +2552,7 @@ export default function AdminDashboardPage() {
               {/* Tab 4: Complaints */}
               {activeTab === "complaints" && (() => {
                 const filteredComplaints = complaints.filter((comp) => {
+                  if (comp.source === "support_enquiry") return false;
                   if (complaintSearchQuery.trim()) {
                     const q = complaintSearchQuery.trim().toLowerCase();
                     const bId = comp.bookingId?.toLowerCase() || "";
@@ -4953,6 +4978,160 @@ export default function AdminDashboardPage() {
                           </table>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Tab: Support Enquiries */}
+              {activeTab === "enquiries" && (() => {
+                const filteredEnquiries = complaints.filter(c => {
+                  if (c.source !== "support_enquiry") return false;
+                  if (complianceSearch.trim()) {
+                    const q = complianceSearch.trim().toLowerCase();
+                    return (
+                      c.customerMobile?.includes(q) ||
+                      c.customerName?.toLowerCase().includes(q) ||
+                      c.customerEmail?.toLowerCase().includes(q) ||
+                      c.reason?.toLowerCase().includes(q) ||
+                      c.description?.toLowerCase().includes(q)
+                    );
+                  }
+                  return true;
+                });
+
+                return (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div>
+                      <h2 className="text-xl font-black">Customer Support Enquiries</h2>
+                      <p className="text-muted-foreground text-xs mt-0.5">Manage and respond to enquiries submitted via the Contact Us form.</p>
+                    </div>
+
+                    {/* Search Panel */}
+                    <div className="bg-card border border-border/60 p-5 rounded-3xl shadow-sm flex items-center gap-3">
+                      <Search className="w-5 h-5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search enquiries by customer name, email, phone, or subject..."
+                        value={complianceSearch}
+                        onChange={(e) => setComplianceSearch(e.target.value)}
+                        className="flex-1 bg-transparent text-sm text-foreground focus:outline-none placeholder-muted-foreground"
+                      />
+                      {complianceSearch && (
+                        <button
+                          onClick={() => setComplianceSearch("")}
+                          className="text-xs text-muted-foreground hover:text-foreground font-semibold cursor-pointer border-none bg-transparent"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {filteredEnquiries.map((enq) => {
+                        const status = enq.status || "pending";
+                        const isResolved = status === "resolved";
+                        return (
+                          <div 
+                            key={enq.id} 
+                            className={`bg-card border rounded-3xl p-6 shadow-sm space-y-4 transition-all hover:border-primary/40 ${
+                              isResolved ? "border-border/60 opacity-80" : "border-primary/20 bg-primary/5"
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/40 pb-3">
+                              <div>
+                                <span className="text-[9px] uppercase font-black tracking-widest text-primary">
+                                  Support Ticket
+                                </span>
+                                <h3 className="font-black text-sm text-foreground mt-0.5">{enq.reason || "No Subject"}</h3>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Submitted: {enq.createdAt ? new Date(enq.createdAt.seconds * 1000).toLocaleString() : "Just now"}
+                                </p>
+                              </div>
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                                isResolved ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500 animate-pulse"
+                              }`}>
+                                {status}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                              <div>
+                                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Customer Name</span>
+                                <span className="font-semibold text-foreground">{enq.customerName}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Email Address</span>
+                                <a href={`mailto:${enq.customerEmail}`} className="font-semibold text-primary hover:underline">{enq.customerEmail}</a>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Mobile Number</span>
+                                <a href={`tel:${enq.customerMobile}`} className="font-semibold text-foreground hover:underline">{enq.customerMobile}</a>
+                              </div>
+                            </div>
+
+                            <div className="bg-muted/40 p-4 rounded-2xl text-xs space-y-1.5 border border-border/40">
+                              <span className="text-[10px] text-muted-foreground uppercase font-black tracking-wider block">Customer Message:</span>
+                              <p className="text-foreground leading-relaxed italic whitespace-pre-wrap">"{enq.description}"</p>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Internal Resolution Note</label>
+                                <textarea
+                                  placeholder="Log action taken, call update notes, or response details..."
+                                  value={tempAdminNotes[enq.id] ?? enq.adminNotes ?? ""}
+                                  onChange={(e) => setTempAdminNotes({ ...tempAdminNotes, [enq.id]: e.target.value })}
+                                  rows={2}
+                                  className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                                />
+                              </div>
+                              <div className="flex flex-wrap gap-2 justify-end">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await updateDoc(doc(db, "complaints", enq.id), {
+                                        adminNotes: tempAdminNotes[enq.id] || ""
+                                      });
+                                      alert("Resolution notes saved successfully!");
+                                    } catch (err: any) {
+                                      alert("Failed to save notes: " + err.message);
+                                    }
+                                  }}
+                                  className="px-4 py-2 border border-border hover:bg-muted font-bold text-xs rounded-xl cursor-pointer"
+                                >
+                                  Save Internal Note
+                                </button>
+                                {!isResolved && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await updateDoc(doc(db, "complaints", enq.id), {
+                                          status: "resolved",
+                                          resolvedAt: serverTimestamp(),
+                                          adminNotes: tempAdminNotes[enq.id] || ""
+                                        });
+                                        alert("Support ticket marked as resolved!");
+                                      } catch (err: any) {
+                                        alert("Failed to resolve enquiry: " + err.message);
+                                      }
+                                    }}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer border-none"
+                                  >
+                                    Mark as Resolved
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {filteredEnquiries.length === 0 && (
+                        <div className="bg-card border border-border/60 p-12 rounded-3xl text-center">
+                          <p className="text-sm text-muted-foreground italic">No support enquiries found.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

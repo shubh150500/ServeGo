@@ -925,32 +925,7 @@ export default function BookServicePage({ params }: PageProps) {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-foreground/80">Select Preferred Time Slot</label>
-                        <div className="grid grid-cols-1 gap-2.5">
-                          {[
-                            "Morning (9 AM - 12 PM)",
-                            "Afternoon (12 PM - 3 PM)",
-                            "Evening (3 PM - 6 PM)",
-                            "Night (6 PM - 9 PM)"
-                          ].map((slot) => (
-                            <button
-                              key={slot}
-                              type="button"
-                              onClick={() => setBookingTimeSlot(slot)}
-                              className={`w-full px-4 py-3 text-left rounded-xl border text-sm font-semibold transition-all flex justify-between items-center ${
-                                bookingTimeSlot === slot
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-border/80 hover:bg-muted text-foreground"
-                              }`}
-                            >
-                              <span>{slot}</span>
-                              {bookingTimeSlot === slot && <span className="text-xs">✓</span>}
-                            </button>
-                          ))}
-                        </div>
                       </div>
-                    </div>
 
                     <div className="pt-4 border-t border-border/40 flex justify-between">
                       <button
@@ -1092,10 +1067,6 @@ export default function BookServicePage({ params }: PageProps) {
                         <div>
                           <span className="text-xs text-muted-foreground block">Scheduled Date</span>
                           <span className="font-semibold text-foreground">{bookingDate}</span>
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground block">Preferred Time</span>
-                          <span className="font-semibold text-foreground">{bookingTimeSlot}</span>
                         </div>
                         <div className="col-span-2">
                           <span className="text-xs text-muted-foreground block">Service Location</span>
