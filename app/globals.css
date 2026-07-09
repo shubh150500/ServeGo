@@ -49,72 +49,72 @@
 }
 
 :root {
-  --background: #FAFAFA;
-  --foreground: #0F172A;
-  --card: #FFFFFF;
-  --card-foreground: #0F172A;
-  --popover: #FFFFFF;
-  --popover-foreground: #0F172A;
-  --primary: #4F46E5;
+  --background: #E7D7C6;
+  --foreground: #000000;
+  --card: #FAF6F1;
+  --card-foreground: #000000;
+  --popover: #FAF6F1;
+  --popover-foreground: #000000;
+  --primary: #C46A4A;
   --primary-foreground: #FFFFFF;
-  --secondary: #F1F5F9;
-  --secondary-foreground: #4F46E5;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --accent: #F1F5F9;
-  --accent-foreground: #4F46E5;
+  --secondary: #EFE4D8;
+  --secondary-foreground: #C46A4A;
+  --muted: #EFE4D8;
+  --muted-foreground: #6A5B4C;
+  --accent: #EFE4D8;
+  --accent-foreground: #C46A4A;
   --destructive: #EF4444;
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #4F46E5;
-  --chart-1: #4F46E5;
-  --chart-2: #64748B;
-  --chart-3: #F1F5F9;
-  --chart-4: #E2E8F0;
-  --chart-5: #FAFAFA;
-  --radius: 0.75rem;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #0F172A;
-  --sidebar-primary: #4F46E5;
+  --border: #D7C3B0;
+  --input: #D7C3B0;
+  --ring: #C46A4A;
+  --chart-1: #C46A4A;
+  --chart-2: #6A5B4C;
+  --chart-3: #EFE4D8;
+  --chart-4: #D7C3B0;
+  --chart-5: #E7D7C6;
+  --radius: 0.625rem;
+  --sidebar: #FAF6F1;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #C46A4A;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F1F5F9;
-  --sidebar-accent-foreground: #4F46E5;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #4F46E5;
+  --sidebar-accent: #EFE4D8;
+  --sidebar-accent-foreground: #C46A4A;
+  --sidebar-border: #D7C3B0;
+  --sidebar-ring: #C46A4A;
 }
 
 .dark {
-  --background: #090A0F;
-  --foreground: #F8FAFC;
-  --card: #151720;
-  --card-foreground: #F8FAFC;
-  --popover: #151720;
-  --popover-foreground: #F8FAFC;
-  --primary: #6366F1;
-  --primary-foreground: #FFFFFF;
-  --secondary: #1E293B;
-  --secondary-foreground: #F8FAFC;
-  --muted: #1E293B;
-  --muted-foreground: #94A3B8;
-  --accent: #1E293B;
-  --accent-foreground: #6366F1;
+  --background: #1C1816;
+  --foreground: #FAF6F1;
+  --card: #292320;
+  --card-foreground: #FAF6F1;
+  --popover: #292320;
+  --popover-foreground: #FAF6F1;
+  --primary: #D97753;
+  --primary-foreground: #1C1816;
+  --secondary: #362F2B;
+  --secondary-foreground: #FAF6F1;
+  --muted: #362F2B;
+  --muted-foreground: #9E8C7C;
+  --accent: #362F2B;
+  --accent-foreground: #D97753;
   --destructive: #EF4444;
-  --border: #1E293B;
-  --input: #1E293B;
-  --ring: #6366F1;
-  --chart-1: #6366F1;
-  --chart-2: #94A3B8;
-  --chart-3: #1E293B;
-  --chart-4: #1E293B;
-  --chart-5: #090A0F;
-  --sidebar: #151720;
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: #6366F1;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #F8FAFC;
-  --sidebar-border: #1E293B;
-  --sidebar-ring: #6366F1;
+  --border: #4D423C;
+  --input: #4D423C;
+  --ring: #D97753;
+  --chart-1: #D97753;
+  --chart-2: #9E8C7C;
+  --chart-3: #362F2B;
+  --chart-4: #4D423C;
+  --chart-5: #1C1816;
+  --sidebar: #292320;
+  --sidebar-foreground: #FAF6F1;
+  --sidebar-primary: #D97753;
+  --sidebar-primary-foreground: #1C1816;
+  --sidebar-accent: #362F2B;
+  --sidebar-accent-foreground: #FAF6F1;
+  --sidebar-border: #4D423C;
+  --sidebar-ring: #D97753;
 }
 
 @layer base {
@@ -225,11 +225,10 @@
 
 /* 2. Premium Card Styling (Service & Benefit Cards) */
 .service-card, .benefit-card {
-  background: var(--card) !important;
+  background: #ffffff !important;
   border-radius: 16px !important;
   border-top: none !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
-  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* 3. Typography & Whitespace Fix ("How the Platform Works" Section) */
