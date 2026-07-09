@@ -117,6 +117,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // 15. Terms Acceptance Logs — anyone can log terms acceptance when booking, admin can read/manage
+    match /terms_acceptance_logs/{logId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
   }
 }
 

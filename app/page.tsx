@@ -72,43 +72,23 @@ export default function Home() {
     if (typeof window !== "undefined") {
       const existingLink = document.querySelector('link[rel="manifest"]');
       if (existingLink) {
-        existingLink.setAttribute("href", "/partner-manifest.json");
+        existingLink.setAttribute("href", "/manifest.json");
       } else {
         const link = document.createElement("link");
         link.rel = "manifest";
-        link.href = "/partner-manifest.json";
+        link.href = "/manifest.json";
         document.head.appendChild(link);
       }
 
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("/partner-sw.js");
+        navigator.serviceWorker.register("/sw.js");
       }
-
-      const handlePrompt = (e: Event) => {
-        e.preventDefault();
-        setPartnerDeferredPrompt(e);
-      };
-
-      window.addEventListener("beforeinstallprompt", handlePrompt);
-      return () => {
-        window.removeEventListener("beforeinstallprompt", handlePrompt);
-      };
     }
   }, []);
 
   const handleInstallPartnerApp = (e: React.MouseEvent) => {
-    if (partnerDeferredPrompt) {
-      e.preventDefault();
-      partnerDeferredPrompt.prompt();
-      partnerDeferredPrompt.userChoice.then((choiceResult: any) => {
-        if (choiceResult.outcome === "accepted") {
-          console.log("User accepted Partner PWA install");
-        }
-        setPartnerDeferredPrompt(null);
-      });
-    } else {
-      router.push("/partner/register");
-    }
+    e.preventDefault();
+    router.push("/partner/register?install=true");
   };
   
   // Custom states for Testimonials and FAQ

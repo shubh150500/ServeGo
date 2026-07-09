@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Lock, Phone, ShieldAlert, UserPlus, User, Briefcase, MapPin, CalendarDays, Camera } from "lucide-react";
+import { Lock, Phone, ShieldAlert, UserPlus, User, Briefcase, MapPin, CalendarDays, Camera, Upload } from "lucide-react";
 import { SERVICES_LIST } from "@/lib/services";
 import { compressProfilePhoto } from "@/lib/imageCompressor";
 import { hashPassword } from "@/lib/utils";
 
-export default function PartnerRegisterPage() {
+function PartnerRegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const shouldInstall = searchParams?.get("install") === "true";
+
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +36,10 @@ export default function PartnerRegisterPage() {
 
   // Agreement checkbox state
   const [agreementAccepted, setAgreementAccepted] = useState(false);
+
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     // Load database services config
@@ -64,8 +71,39 @@ export default function PartnerRegisterPage() {
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("/partner-sw.js");
       }
-    }
 
+      const checkStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+      setIsStandalone(checkStandalone);
+
+      const handlePrompt = (e: any) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        if (!checkStandalone) {
+          setShowInstallPrompt(true);
+        }
+      };
+
+      window.addEventListener("beforeinstallprompt", handlePrompt);
+
+      if (shouldInstall && !checkStandalone) {
+        const timer = setTimeout(() => {
+          if (!checkStandalone) {
+            setShowInstallPrompt(true);
+          }
+        }, 1000);
+        return () => {
+          window.removeEventListener("beforeinstallprompt", handlePrompt);
+          clearTimeout(timer);
+        };
+      }
+
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handlePrompt);
+      };
+    }
+  }, [shouldInstall]);
+
+  useEffect(() => {
     // Redirect if already logged in
     const activePartner = localStorage.getItem("partner_profile");
     if (activePartner) {
@@ -525,6 +563,65 @@ export default function PartnerRegisterPage() {
         </div>
 
       </div>
+
+      {/* PWA Install Promotion Modal Overlay */}
+      {showInstallPrompt && !isStandalone && (
+        <div className="fixed inset-0 bg-slate-900/90 flex items-center justify-center p-6 z-55 backdrop-blur-md animate-in fade-in">
+          <div className="bg-card border border-border/80 p-8 rounded-3xl w-full max-w-md text-center space-y-6 shadow-2xl text-foreground">
+            <div className="w-20 h-20 rounded-3xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mx-auto">
+              <Upload className="w-10 h-10 animate-bounce" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="font-black text-2xl text-foreground">Install Partner Portal App</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed px-2">
+                This portal should be installed to run directly on your home screen. Installing gives you a standalone application experience, faster startup, and instant dispatch notifications.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={async () => {
+                  if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === "accepted") {
+                      setShowInstallPrompt(false);
+                      setDeferredPrompt(null);
+                      setIsStandalone(true);
+                    }
+                  } else {
+                    alert("On iOS: Tap the share button in Safari and select 'Add to Home Screen'.\nOn Android/Chrome: Click the browser menu (three dots) and select 'Add to Home screen' or 'Install App'.");
+                  }
+                }}
+                className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-black font-black text-sm rounded-2xl shadow-lg hover:shadow-emerald-500/30 flex items-center justify-center gap-2 cursor-pointer btn-press border-none"
+              >
+                Install App Now
+              </button>
+              
+              <button
+                onClick={() => setShowInstallPrompt(false)}
+                className="w-full py-3 border border-border/80 hover:bg-muted text-xs font-bold rounded-2xl text-muted-foreground cursor-pointer transition-colors bg-background"
+              >
+                Continue in Browser
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function PartnerRegister() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground text-sm font-semibold mt-4">Loading Partner Portal...</p>
+      </div>
+    }>
+      <PartnerRegisterPage />
+    </Suspense>
   );
 }

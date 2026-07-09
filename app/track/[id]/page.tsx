@@ -302,7 +302,7 @@ export default function OrderTrackingPage({ params }: PageProps) {
     ctx.font = "bold 13px sans-serif";
     ctx.fillText(`Invoice No: SG-${booking.id}`, 40, 140);
     ctx.fillText(`Date: ${booking.createdAt ? new Date(booking.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString()}`, 40, 160);
-    ctx.fillText(`Status: PAID (Verified)`, 40, 180);
+    ctx.fillText(`Status: ${booking.assuranceFeePaid ? "PAID (Verified)" : "PENDING/UNPAID"}`, 40, 180);
 
     // Horizontal Separator
     ctx.beginPath();
@@ -425,7 +425,9 @@ export default function OrderTrackingPage({ params }: PageProps) {
   const getStepStatus = (stepName: "placed" | "assigned" | "accepted" | "completed") => {
     const status = booking.status;
     
-    if (stepName === "placed") return "completed"; // always completed if document exists
+    if (stepName === "placed") {
+      return booking.assuranceFeePaid ? "completed" : "pending";
+    }
     
     if (stepName === "assigned") {
       if (status === "ASSIGNED" || status === "ACCEPTED" || status === "COMPLETED") return "completed";
@@ -496,6 +498,14 @@ export default function OrderTrackingPage({ params }: PageProps) {
           </div>
 
           <div className="p-6 md:p-8 space-y-8">
+            {!booking.assuranceFeePaid && (
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl flex items-center gap-3 text-sm font-medium animate-in fade-in">
+                <AlertTriangle className="w-5 h-5 shrink-0" />
+                <span>
+                  <strong>Unpaid Booking:</strong> The payment verification for this booking is pending or failed. If you have already paid, it may take a few minutes to verify. Otherwise, please place a new booking.
+                </span>
+              </div>
+            )}
             
             {/* Live Progress Timeline */}
             <div className="space-y-6">
@@ -507,12 +517,24 @@ export default function OrderTrackingPage({ params }: PageProps) {
                 
                 {/* Step 1: Booking Placed */}
                 <div className="relative">
-                  <div className="absolute -left-8 mt-0.5 w-6.5 h-6.5 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 flex items-center justify-center text-xs font-bold z-10">
-                    ✓
-                  </div>
+                  {booking.assuranceFeePaid ? (
+                    <div className="absolute -left-8 mt-0.5 w-6.5 h-6.5 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 flex items-center justify-center text-xs font-bold z-10">
+                      ✓
+                    </div>
+                  ) : (
+                    <div className="absolute -left-8 mt-0.5 w-6.5 h-6.5 rounded-full bg-destructive/20 text-destructive border border-destructive/30 flex items-center justify-center text-xs font-bold z-10">
+                      ✕
+                    </div>
+                  )}
                   <div>
-                    <h4 className="font-bold text-sm text-foreground">Assurance Fee Captured</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">Payment registered and order initialized in queue.</p>
+                    <h4 className="font-bold text-sm text-foreground">
+                      {booking.assuranceFeePaid ? "Assurance Fee Captured" : "Payment Pending / Failed"}
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {booking.assuranceFeePaid 
+                        ? "Payment registered and order initialized in queue." 
+                        : "Assurance fee payment has not been verified or has failed."}
+                    </p>
                   </div>
                 </div>
 
@@ -867,8 +889,9 @@ export default function OrderTrackingPage({ params }: PageProps) {
                 </h4>
                 <button
                   onClick={downloadInvoice}
+                  disabled={!booking.assuranceFeePaid}
                   type="button"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary font-extrabold text-[11px] rounded-lg transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary font-extrabold text-[11px] rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FileText className="w-3.5 h-3.5" /> Download Invoice
                 </button>
