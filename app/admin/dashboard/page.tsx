@@ -185,6 +185,8 @@ export default function AdminDashboardPage() {
   const [shopImageFiles, setShopImageFiles] = useState<File[]>([]);
   const [shopExistingImages, setShopExistingImages] = useState<string[]>([]);
   const [shopStatus, setShopStatus] = useState<"active" | "inactive">("active");
+  const [shopLogoFile, setShopLogoFile] = useState<File | null>(null);
+  const [shopLogoUrl, setShopLogoUrl] = useState("");
 
   // Vehicle CRUD State
   const [showAddVehicle, setShowAddVehicle] = useState(false);
@@ -202,6 +204,8 @@ export default function AdminDashboardPage() {
   const [vehicleImageFiles, setVehicleImageFiles] = useState<File[]>([]);
   const [vehicleExistingImages, setVehicleExistingImages] = useState<string[]>([]);
   const [vehicleStatus, setVehicleStatus] = useState<"active" | "inactive">("active");
+  const [vehicleLogoFile, setVehicleLogoFile] = useState<File | null>(null);
+  const [vehicleLogoUrl, setVehicleLogoUrl] = useState("");
   const [showAddWorker, setShowAddWorker] = useState(false);
   const [showAddComplaint, setShowAddComplaint] = useState(false);
 
@@ -564,6 +568,24 @@ export default function AdminDashboardPage() {
     try {
       setSaving(true);
       
+      // Upload logo if selected
+      let logoUrl = shopLogoUrl;
+      if (shopLogoFile) {
+        try {
+          const logoRef = ref(storage, `shops/logos/${Date.now()}_${shopLogoFile.name}`);
+          await promiseWithTimeout(
+            uploadBytes(logoRef, shopLogoFile),
+            12000,
+            "Logo upload timed out. Try a smaller image size."
+          );
+          logoUrl = await getDownloadURL(logoRef);
+        } catch (logoErr) {
+          console.warn("Storage logo upload failed, fallback to base64", logoErr);
+          const base64 = await compressImageToBase64(shopLogoFile, 256, 256);
+          logoUrl = base64;
+        }
+      }
+
       // Upload files or fallback base64
       let uploadedUrls: string[] = [...shopExistingImages];
       for (const file of shopImageFiles) {
@@ -600,6 +622,7 @@ export default function AdminDashboardPage() {
         category: shopCategory,
         rating: parseFloat(shopRating) || 5.0,
         status: shopStatus,
+        logoUrl: logoUrl,
         images: uploadedUrls,
         updatedAt: serverTimestamp(),
       };
@@ -641,6 +664,8 @@ export default function AdminDashboardPage() {
       setShopImageFiles([]);
       setShopExistingImages([]);
       setShopStatus("active");
+      setShopLogoFile(null);
+      setShopLogoUrl("");
       setSaving(false);
       alert(editingShop ? "Shop profile updated successfully!" : "New partner shop registered successfully!");
     } catch (err: any) {
@@ -676,6 +701,24 @@ export default function AdminDashboardPage() {
     try {
       setSaving(true);
 
+      // Upload logo if selected
+      let logoUrl = vehicleLogoUrl;
+      if (vehicleLogoFile) {
+        try {
+          const logoRef = ref(storage, `vehicles/logos/${Date.now()}_${vehicleLogoFile.name}`);
+          await promiseWithTimeout(
+            uploadBytes(logoRef, vehicleLogoFile),
+            12000,
+            "Logo upload timed out. Try a smaller image size."
+          );
+          logoUrl = await getDownloadURL(logoRef);
+        } catch (logoErr) {
+          console.warn("Storage logo upload failed, fallback to base64", logoErr);
+          const base64 = await compressImageToBase64(vehicleLogoFile, 256, 256);
+          logoUrl = base64;
+        }
+      }
+
       let uploadedUrls: string[] = [...vehicleExistingImages];
       for (const file of vehicleImageFiles) {
         try {
@@ -706,6 +749,7 @@ export default function AdminDashboardPage() {
         price: parseFloat(vehiclePrice) || 0,
         availability: vehicleAvailability,
         status: vehicleStatus,
+        logoUrl: logoUrl,
         images: uploadedUrls,
         updatedAt: serverTimestamp(),
       };
@@ -744,6 +788,8 @@ export default function AdminDashboardPage() {
       setVehicleImageFiles([]);
       setVehicleExistingImages([]);
       setVehicleStatus("active");
+      setVehicleLogoFile(null);
+      setVehicleLogoUrl("");
       setSaving(false);
       alert(editingVehicle ? "Vehicle profile updated successfully!" : "New vehicle registered successfully!");
     } catch (err: any) {
@@ -789,6 +835,8 @@ export default function AdminDashboardPage() {
     setShopImageFiles([]);
     setShopExistingImages(shop.images || []);
     setShopStatus(shop.status || "active");
+    setShopLogoFile(null);
+    setShopLogoUrl(shop.logoUrl || "");
     setShowAddShop(true);
   };
 
@@ -808,6 +856,8 @@ export default function AdminDashboardPage() {
     setVehicleImageFiles([]);
     setVehicleExistingImages(v.images || []);
     setVehicleStatus(v.status || "active");
+    setVehicleLogoFile(null);
+    setVehicleLogoUrl(v.logoUrl || "");
     setShowAddVehicle(true);
   };
 
@@ -3624,6 +3674,8 @@ export default function AdminDashboardPage() {
                           setShopImageFiles([]);
                           setShopExistingImages([]);
                           setShopStatus("active");
+                          setShopLogoFile(null);
+                          setShopLogoUrl("");
                           setShowAddShop(true);
                         }}
                         className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-sm shadow hover:shadow-primary/30 transition-all cursor-pointer"
@@ -3815,6 +3867,63 @@ export default function AdminDashboardPage() {
                             onChange={(e) => setShopDescription(e.target.value)}
                             className="w-full px-4 py-3 bg-muted/40 border border-border/80 rounded-xl focus:outline-none text-sm resize-none"
                           />
+                        </div>
+
+                        {/* Logo upload section */}
+                        <div className="space-y-4 border-t border-border/60 pt-6">
+                          <h4 className="text-sm font-bold text-foreground">Shop Logo Image</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-muted/20 border border-border/80 rounded-2xl">
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-foreground/80 block">Upload Logo</label>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const file = e.target.files[0];
+                                    if (file.size > 2 * 1024 * 1024) {
+                                      alert("Logo file size exceeds the 2MB limit.");
+                                      return;
+                                    }
+                                    setShopLogoFile(file);
+                                  }
+                                }}
+                                className="w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                              />
+                            </div>
+                            <div className="flex gap-6">
+                              {shopLogoFile && (
+                                <div>
+                                  <span className="text-xs font-bold text-foreground/60 block mb-2">Selected Logo</span>
+                                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/80 bg-muted">
+                                    <span className="text-[10px] text-foreground truncate block p-1">{shopLogoFile.name}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShopLogoFile(null)}
+                                      className="absolute top-0 right-0 w-4 h-4 bg-rose-500 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-[10px] font-bold"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              {shopLogoUrl && (
+                                <div>
+                                  <span className="text-xs font-bold text-foreground/60 block mb-2">Current Logo</span>
+                                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/80 bg-muted">
+                                    <img src={shopLogoUrl} className="w-full h-full object-cover" alt="Shop logo" />
+                                    <button
+                                      type="button"
+                                      onClick={() => setShopLogoUrl("")}
+                                      className="absolute top-0 right-0 w-4 h-4 bg-rose-500 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-[10px] font-bold"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         {/* Image upload section */}
@@ -4067,6 +4176,8 @@ export default function AdminDashboardPage() {
                           setVehicleImageFiles([]);
                           setVehicleExistingImages([]);
                           setVehicleStatus("active");
+                          setVehicleLogoFile(null);
+                          setVehicleLogoUrl("");
                           setShowAddVehicle(true);
                         }}
                         className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-sm shadow hover:shadow-primary/30 transition-all cursor-pointer"
@@ -4221,6 +4332,64 @@ export default function AdminDashboardPage() {
                         </div>
 
                         {/* Image upload section */}
+                        <div className="space-y-4 border-t border-border/60 pt-6">
+                        {/* Logo upload section */}
+                        <div className="space-y-4 border-t border-border/60 pt-6">
+                          <h4 className="text-sm font-bold text-foreground">Vehicle Logo Image</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-muted/20 border border-border/80 rounded-2xl">
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-foreground/80 block">Upload Logo</label>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const file = e.target.files[0];
+                                    if (file.size > 2 * 1024 * 1024) {
+                                      alert("Logo file size exceeds the 2MB limit.");
+                                      return;
+                                    }
+                                    setVehicleLogoFile(file);
+                                  }
+                                }}
+                                className="w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                              />
+                            </div>
+                            <div className="flex gap-6">
+                              {vehicleLogoFile && (
+                                <div>
+                                  <span className="text-xs font-bold text-foreground/60 block mb-2">Selected Logo</span>
+                                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/80 bg-muted">
+                                    <span className="text-[10px] text-foreground truncate block p-1">{vehicleLogoFile.name}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setVehicleLogoFile(null)}
+                                      className="absolute top-0 right-0 w-4 h-4 bg-rose-500 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-[10px] font-bold"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              {vehicleLogoUrl && (
+                                <div>
+                                  <span className="text-xs font-bold text-foreground/60 block mb-2">Current Logo</span>
+                                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border/80 bg-muted">
+                                    <img src={vehicleLogoUrl} className="w-full h-full object-cover" alt="Vehicle logo" />
+                                    <button
+                                      type="button"
+                                      onClick={() => setVehicleLogoUrl("")}
+                                      className="absolute top-0 right-0 w-4 h-4 bg-rose-500 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-[10px] font-bold"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="space-y-4 border-t border-border/60 pt-6">
                           <h4 className="text-sm font-bold text-foreground">Vehicle Photo Album</h4>
                           

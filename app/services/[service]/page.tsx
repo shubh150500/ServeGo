@@ -389,11 +389,10 @@ export default function ServicePage({ params }: PageProps) {
                       </div>
                     </div>
 
-                    {/* Image */}
-                    {partner.images && partner.images.length > 0 && (
+                    {(partner.logoUrl || (partner.images && partner.images.length > 0)) && (
                       <div className="aspect-video w-full rounded-2xl overflow-hidden bg-muted">
                         <img
-                          src={partner.images[0]}
+                          src={partner.logoUrl || partner.images[0]}
                           alt={service.type === "partner" ? partner.name : partner.vehicleName}
                           className="w-full h-full object-cover"
                         />
