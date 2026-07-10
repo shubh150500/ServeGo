@@ -702,7 +702,11 @@ export default function Home() {
                 >
                   <div className="space-y-4">
                     <div className="w-12 h-12 rounded-2xl bg-[#F5ECE2] flex items-center justify-center text-[#9c6d48] overflow-hidden">
-                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                      {service.imageUrl ? (
+                        <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                      )}
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-foreground leading-snug">{service.name}</h3>
@@ -763,7 +767,11 @@ export default function Home() {
                 >
                   <div className="space-y-4">
                     <div className="w-12 h-12 rounded-2xl bg-[#F5ECE2] flex items-center justify-center text-[#9c6d48] overflow-hidden">
-                      <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                      {service.imageUrl ? (
+                        <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <ServiceIcon name={service.iconName} className="w-6 h-6" />
+                      )}
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-foreground leading-snug">{service.name}</h3>

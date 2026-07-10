@@ -175,8 +175,12 @@ export default function ServicePage({ params }: PageProps) {
 
         <main className="flex-1 max-w-lg w-full mx-auto px-6 py-12 flex flex-col justify-center space-y-8">
           <div className="space-y-4 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mx-auto">
-              <ServiceIcon name={service.iconName} className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mx-auto overflow-hidden">
+              {service.imageUrl ? (
+                <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+              ) : (
+                <ServiceIcon name={service.iconName} className="w-8 h-8" />
+              )}
             </div>
             <h1 className="text-4xl font-black tracking-tight">{service.name}</h1>
             <span className="inline-block px-3 py-1 bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 text-xs font-bold rounded-full uppercase tracking-wider">
