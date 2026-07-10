@@ -4330,9 +4330,6 @@ export default function AdminDashboardPage() {
                             </select>
                           </div>
                         </div>
-
-                        {/* Image upload section */}
-                        <div className="space-y-4 border-t border-border/60 pt-6">
                         {/* Logo upload section */}
                         <div className="space-y-4 border-t border-border/60 pt-6">
                           <h4 className="text-sm font-bold text-foreground">Vehicle Logo Image</h4>
