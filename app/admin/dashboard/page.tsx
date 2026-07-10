@@ -429,6 +429,17 @@ export default function AdminDashboardPage() {
               };
               seedServices();
             } else {
+              // Sync missing services from SERVICES_LIST (for newly added categories like rasan grocery)
+              const existingIds = new Set(snap.docs.map(doc => doc.id));
+              const missingServices = SERVICES_LIST.filter(s => !existingIds.has(s.id));
+              if (missingServices.length > 0) {
+                const syncMissing = async () => {
+                  for (const s of missingServices) {
+                    await setDoc(doc(db, "services", s.id), s);
+                  }
+                };
+                syncMissing();
+              }
               setServices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             }
           },
