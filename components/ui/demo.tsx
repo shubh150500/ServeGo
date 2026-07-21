@@ -171,19 +171,19 @@ export default function DotGlobeHeroDemo() {
     >
       <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-background/20 pointer-events-none" />
       
-      {/* Hero background worker image with gradient overlay (visible on mobile too!) */}
-      <div className="absolute inset-y-0 right-0 w-full md:w-2/3 lg:w-3/5 h-full z-0 pointer-events-none select-none opacity-35 md:opacity-80 overflow-hidden">
+      {/* Hero background worker image with responsive placement */}
+      <div className="absolute bottom-0 right-0 w-full lg:w-7/12 h-full z-0 pointer-events-none select-none overflow-hidden flex items-end justify-end">
         <img
           src="/workers.png"
           alt="Workers Background"
-          loading="lazy"
-          className="w-full h-full object-contain object-right"
+          loading="eager"
+          className="w-full h-[60%] sm:h-[70%] lg:h-[90%] xl:h-full object-cover lg:object-contain object-bottom lg:object-right-bottom opacity-45 sm:opacity-55 lg:opacity-85 transition-opacity duration-500"
           style={{
-            maskImage: "linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)",
-            WebkitMaskImage: "linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%)",
+            maskImage: "linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage: "linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent w-full" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent lg:bg-gradient-to-r lg:from-background lg:via-background/40 lg:to-transparent w-full pointer-events-none" />
       </div>
 
 
