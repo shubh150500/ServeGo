@@ -197,7 +197,7 @@ export default function DotGlobeHeroDemo() {
         {/* Left Column: Heading, Subheading & CTAs */}
         <div className="lg:col-span-6 flex flex-col items-start text-left space-y-6 md:space-y-8 max-w-xl">
           
-          {/* Aurangabad zone tag */}
+          {/* Rohini zone tag */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -205,7 +205,7 @@ export default function DotGlobeHeroDemo() {
             className="relative inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/15 via-primary/5 to-primary/15 border border-primary/25 backdrop-blur-xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)]"
           >
             <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
-            <span className="relative z-10 text-xs font-bold text-foreground/80 tracking-wider uppercase">Aurangabad zone</span>
+            <span className="relative z-10 text-xs font-bold text-foreground/80 tracking-wider uppercase">Rohini zone</span>
             <div className="w-2 h-2 bg-primary rounded-full animate-ping [animation-delay:0.5s]" />
           </motion.div>
           

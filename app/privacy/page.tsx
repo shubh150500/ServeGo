@@ -145,7 +145,7 @@ export default function PrivacyPolicyPage() {
                   Please reach out to our support or privacy compliance team directly.
                 </p>
                 <a 
-                  href="mailto:servegoofficial@gmail.com" 
+                  href="mailto:info@servego.co.in" 
                   className="inline-flex w-full items-center justify-center py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:scale-95 transition-all text-center shadow-md shadow-primary/10"
                 >
                   Email Privacy Officer

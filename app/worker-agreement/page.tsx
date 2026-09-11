@@ -145,7 +145,7 @@ export default function WorkerAgreementPage() {
                   For disputes regarding account suspension or technical assistance, contact the ServeGo partner helpline.
                 </p>
                 <a 
-                  href="mailto:servegoofficial@gmail.com" 
+                  href="mailto:info@servego.co.in" 
                   className="inline-flex w-full items-center justify-center py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:scale-95 transition-all text-center shadow-md shadow-primary/10"
                 >
                   Contact Partner Care

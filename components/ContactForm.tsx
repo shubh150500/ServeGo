@@ -72,8 +72,8 @@ export default function ContactForm() {
               </div>
               <div>
                 <h4 className="font-bold text-foreground text-sm">Grievances & Support</h4>
-                <a href="mailto:servegoofficial@gmail.com" className="text-primary hover:underline text-sm font-semibold break-all">
-                  servegoofficial@gmail.com
+                <a href="mailto:info@servego.co.in" className="text-primary hover:underline text-sm font-semibold break-all">
+                  info@servego.co.in
                 </a>
               </div>
             </div>

@@ -49,7 +49,7 @@ export default function RefundPolicy() {
           <h2 className="text-2xl font-bold mb-3">5. Contact for Refund Queries</h2>
           <p className="text-muted-foreground">
             For any questions regarding refunds, please contact us at{' '}
-            <a href="mailto:servegoofficial@gmail.com" className="text-primary hover:underline">servegoofficial@gmail.com</a>.
+            <a href="mailto:info@servego.co.in" className="text-primary hover:underline">info@servego.co.in</a>.
           </p>
         </section>
         <div className="mt-12">

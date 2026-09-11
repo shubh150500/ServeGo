@@ -315,7 +315,7 @@ export default function Home() {
               ],
               "contactPoint": {
                 "@type": "ContactPoint",
-                "email": "servegoofficial@gmail.com",
+                "email": "info@servego.co.in",
                 "contactType": "customer service",
                 "areaServed": "IN",
                 "availableLanguage": ["English", "Hindi"]
@@ -328,7 +328,7 @@ export default function Home() {
               "image": "https://servego.co.in/logo.png",
               "@id": "https://servego.co.in/#localbusiness",
               "url": "https://servego.co.in",
-              "email": "servegoofficial@gmail.com",
+              "email": "info@servego.co.in",
               "priceRange": "₹₹",
               "address": {
                 "@type": "PostalAddress",
@@ -1132,8 +1132,8 @@ export default function Home() {
             </p>
             <p className="text-muted-foreground text-sm flex items-center gap-1.5 justify-center md:justify-start mt-1">
               <span className="font-bold text-foreground">Email:</span>
-              <a href="mailto:servegoofficial@gmail.com" className="text-primary hover:underline font-bold transition-colors">
-                servegoofficial@gmail.com
+              <a href="mailto:info@servego.co.in" className="text-primary hover:underline font-bold transition-colors">
+                info@servego.co.in
               </a>
             </p>
           </div>
